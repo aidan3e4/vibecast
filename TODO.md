@@ -1,3 +1,9 @@
 - test and fix the session thing: 
     - test the backend
     - test the UI visualization
+- write better analysis prompt: figure out what to extract
+- add some sort of memory: either pass in previous state, or what
+- figure out how to decouple the camera from the server that processes the image: need orange pi or something running next to it but not my computer. The orange pi has to take the stream and send it further to the server which does the processing. 
+    - Can the orange pi do all the processing ? The LLM call is fine, the unwarping and all might not be
+    - Maybe there is a server up that does the processing, and the orange pi just sends the images to it every few seconds or so
+    - try http://[camera-ip-address]/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=anyrandomstring&user=[your-username]&password=[your-password] to see if we get a snapshot from there

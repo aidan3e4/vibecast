@@ -1,0 +1,9 @@
+# Minimal dependencies for snapshot uploader
+# Designed for resource-constrained devices (Raspberry Pi, Orange Pi)
+
+# Core dependencies (always required)
+requests>=2.28.0,<3.0.0
+
+# Optional: Only install if using S3 backend
+# Uncomment or install separately with: pip install boto3
+# boto3>=1.26.0,<2.0.0

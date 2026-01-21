@@ -39,6 +39,27 @@ Implement a "Camera" object by passing it an IP address, Username and Password. 
 
 See the `examples` directory.
 
+### Snapshot Uploader Service (NEW!)
+
+A lightweight service designed to run on resource-constrained devices (Raspberry Pi, Orange Pi) for capturing camera snapshots and uploading them to remote storage. This decouples image capture from ML processing, allowing you to run a minimal service on edge hardware and process images on a more powerful server.
+
+**Features:**
+- Minimal dependencies for low-resource devices
+- Multiple storage backends: S3, Filesystem, HTTP
+- Configurable capture intervals
+- Built-in health monitoring
+- Systemd service integration
+
+See the [snapshot-uploader](snapshot-uploader/) directory for complete documentation.
+
+**Quick Start:**
+```bash
+cd snapshot-uploader
+bash install-rpi.sh
+# Edit .env with your camera settings
+python3 uploader.py
+```
+
 ### Using the library as a Python Module
 
 Install the package via PyPi
