@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  snapshot-uploader:
+    build: .
+    image: snapshot-uploader:latest
+    container_name: snapshot-uploader
+    restart: unless-stopped
+
+    # Environment variables from .env file
+    env_file:
+      - .env
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Port mapping for health check
+    ports:
+      - "8080:8080"
+
+    # Volume for filesystem backend (if using)
+    volumes:
+      - ./snapshots:/app/snapshots
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M

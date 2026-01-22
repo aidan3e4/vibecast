@@ -1,0 +1,43 @@
+services:
+  camera-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: camera-server:latest
+    container_name: camera-server
+
+    # Environment variables (override with .env file)
+    environment:
+      - CAMERA_IP=${CAMERA_IP}
+      - CAMERA_USER=${CAMERA_USER:-admin}
+      - CAMERA_PASSWORD=${CAMERA_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - CAPTURE_INTERVAL=${CAPTURE_INTERVAL:-60}
+      # - PLACE=${PLACE:-office}
+
+    # # Mount data directory for persistent storage
+    # volumes:
+    #   - ./data:/app/data
+      # Optional: Mount .env file if you prefer file-based config
+      # - ./.env:/app/.env:ro
+
+    # # Override default command with actual capture script
+    command: >
+        sleep infinity
+    #   python camera_capture.py
+    #   --interval ${CAPTURE_INTERVAL:-60}
+    #   --place ${PLACE:-office}
+    #   --analyze
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Resource limits (optional)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 1G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 512M
