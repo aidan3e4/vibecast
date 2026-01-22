@@ -17,7 +17,7 @@ from starlette.requests import Request
 app = FastAPI(title="Camera Session Viewer")
 
 # Configuration
-DATA_DIR = Path('./data')
+DATA_DIR = Path('../data')
 templates = Jinja2Templates(directory="templates")
 
 

@@ -7,3 +7,4 @@
     - Can the orange pi do all the processing ? The LLM call is fine, the unwarping and all might not be
     - Maybe there is a server up that does the processing, and the orange pi just sends the images to it every few seconds or so
     - try http://[camera-ip-address]/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=anyrandomstring&user=[your-username]&password=[your-password] to see if we get a snapshot from there
+- deploy a serverless function to process. Use vLLM to try it
