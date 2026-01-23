@@ -59,7 +59,7 @@ cd vibecast
 
 ```bash
 # Install Python dependencies
-pip install -r requirements-ftp.txt
+pip install -r ftp_server/requirements.txt
 ```
 
 ## Step 6: Configure Environment
@@ -85,7 +85,7 @@ FTP_HOST = "0.0.0.0"
 ### Option A: Foreground (for testing)
 
 ```bash
-python3 services/ftp_server.py
+python3 ftp_server/server.py
 ```
 
 Press Ctrl+C to stop.
@@ -93,7 +93,7 @@ Press Ctrl+C to stop.
 ### Option B: Background with nohup
 
 ```bash
-nohup python3 services/ftp_server.py > ftp_server.log 2>&1 &
+nohup python3 ftp_server/server.py > ftp_server.log 2>&1 &
 
 # Check if running
 ps aux | grep ftp_server
@@ -109,7 +109,7 @@ tail -f ftp_server.log
 screen -S ftp
 
 # Start FTP server
-python3 services/ftp_server.py
+python3 ftp_server/server.py
 
 # Detach: Press Ctrl+A then D
 
@@ -172,7 +172,7 @@ If you prefer Docker:
 
 ```bash
 # Build image
-docker build -f Dockerfile.ftp -t vibecast-ftp .
+docker build -f ftp_server/Dockerfile -t vibecast-ftp .
 
 # Run container
 docker run -d \
@@ -277,7 +277,7 @@ This ensures uploads persist even if pod restarts.
 
 if ! pgrep -f "ftp_server.py" > /dev/null; then
     echo "FTP server is down! Restarting..."
-    nohup python3 services/ftp_server.py > ftp_server.log 2>&1 &
+    nohup python3 ftp_server/server.py > ftp_server.log 2>&1 &
 fi
 ```
 

@@ -35,8 +35,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = [
   "reolinkapi",
-  "clients",
-  "vision_llm"
+  "app",
+  "vision_llm",
+  "ftp_server"
 ]
 
 [tool.ruff]

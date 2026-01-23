@@ -160,7 +160,7 @@ ftp_uploads/
    FTP_PORT = "2121"  # Not the default 21
    ```
 
-4. **Consider IP whitelisting**: Modify `services/ftp_server.py` to only accept connections from your camera's IP
+4. **Consider IP whitelisting**: Modify `ftp_server/server.py` to only accept connections from your camera's IP
 
 5. **Monitor logs**:
    ```bash
@@ -235,7 +235,7 @@ sudo ufw allow 60000:60100/tcp
 
 If your camera needs passive mode:
 
-1. Edit `services/ftp_server.py`
+1. Edit `ftp_server/server.py`
 2. Uncomment the passive ports line:
    ```python
    handler.passive_ports = range(60000, 60100)
@@ -272,7 +272,7 @@ The FTP server is separate from the capture service. To process uploaded images:
 
 ### Custom Upload Handling
 
-Edit `services/ftp_server.py` and modify the `on_file_received` method:
+Edit `ftp_server/server.py` and modify the `on_file_received` method:
 
 ```python
 def on_file_received(self, file):

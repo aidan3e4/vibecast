@@ -33,20 +33,20 @@ viewer:
 	@echo ""
 	@echo "Network access: Find your IP with 'make ip'"
 	@echo ""
-	@python3 -m viewer.session_viewer
+	@python3 -m app.viewer
 
 capture:
-	python3 -m clients.camera_capture $(ARGS)
+	python3 -m app.capture $(ARGS)
 
 ftp:
 	@echo "Starting FTP server..."
 	@echo "Upload directory: ftp_uploads/"
 	@echo "Configure in .env file"
 	@echo ""
-	@python3 services/ftp_server.py
+	@python3 ftp_server/server.py
 
 test-ftp:
 	@echo "Testing FTP server connection..."
 	@echo "(Make sure FTP server is running first: make ftp)"
 	@echo ""
-	@python3 scripts/test_ftp.py
+	@python3 ftp_server/test_ftp.py

@@ -23,3 +23,12 @@ Deployment:
 Engineer debt / optimizations:
 - make LLM client async --> use vllm
 - split vision_llm into a CV part and an LLM part
+
+
+
+Simplify the way we connect the cam
+- set up FTP server locally
+- have the camera upload to it
+- dockerize the FTP server
+- deploy on runpod and test
+- make it easy to setup the camera on a new wifi`q za

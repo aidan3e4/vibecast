@@ -23,7 +23,7 @@ services:
 
     # # Override default command with actual capture script
     # command: >
-    #   python -m clients.camera_capture.py
+    #   python -m app.capture
     #   --interval ${CAPTURE_INTERVAL:-10}
     #   --place ${PLACE:-test}
     #   -v B

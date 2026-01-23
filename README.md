@@ -81,7 +81,7 @@ Run an FTP server to receive automatic uploads from your Reolink camera:
 
 ```bash
 # Install FTP server dependencies
-pip install -r requirements-ftp.txt
+pip install -r ftp_server/requirements.txt
 
 # Start FTP server
 make ftp
@@ -156,10 +156,14 @@ sudo firewall-cmd --add-port=8000/tcp  # Fedora/RHEL
 
 ```
 vibecast/
-├── clients/           # Camera capture client
-├── viewer/            # Web viewer application
-│   └── templates/     # HTML templates
+├── reolinkapi/        # Reolink camera API wrapper
 ├── vision_llm/        # LLM analysis and fisheye processing
+├── app/               # Main camera application
+│   ├── capture.py     # CLI camera capture
+│   ├── viewer.py      # Web viewer application
+│   └── templates/     # HTML templates
+├── ftp_server/        # FTP server for camera uploads
+├── uploader/          # Streaming service (self-contained)
 ├── data/              # Captured sessions (auto-created)
 ├── .env               # Configuration
 └── Makefile           # Shortcuts

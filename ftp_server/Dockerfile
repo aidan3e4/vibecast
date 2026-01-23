@@ -3,12 +3,12 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install dependencies
-COPY requirements-ftp.txt .
-RUN pip install --no-cache-dir -r requirements-ftp.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy FTP server code
-COPY services/ ./services/
-COPY .env.example .env
+COPY server.py .
+COPY ../.env.example .env
 
 # Create upload directory
 RUN mkdir -p ftp_uploads
@@ -20,4 +20,4 @@ EXPOSE 2121
 EXPOSE 60000-60100
 
 # Run FTP server
-CMD ["python3", "services/ftp_server.py"]
+CMD ["python3", "server.py"]
