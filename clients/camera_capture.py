@@ -32,7 +32,7 @@ CAMERA_IP = os.environ["CAMERA_IP"]
 USERNAME = os.environ["CAMERA_USERNAME"]
 PASSWORD = os.environ["CAMERA_PASSWORD"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-USE_HTTPS = False
+USE_HTTPS = False if os.environ["USE_HTTPS"].lower() == "false" else True
 
 # View name mapping
 VIEW_MAP = {
@@ -177,13 +177,13 @@ View codes:
     )
 
     # Camera connection (defaults from .env)
-    parser.add_argument('-i', '--ip', default=os.environ.get('CAMERA_IP'),
+    parser.add_argument('-i', '--ip', default=CAMERA_IP,
                         help='Camera IP address (default: from CAMERA_IP env var)')
-    parser.add_argument('-u', '--username', default=os.environ.get('CAMERA_USERNAME', 'admin'),
+    parser.add_argument('-u', '--username', default=USERNAME,
                         help='Camera username (default: from CAMERA_USERNAME env var)')
-    parser.add_argument('-p', '--password', default=os.environ.get('CAMERA_PASSWORD', ''),
+    parser.add_argument('-p', '--password', default=PASSWORD,
                         help='Camera password (default: from CAMERA_PASSWORD env var)')
-    parser.add_argument('--https', action='store_true', help='Use HTTPS instead of HTTP')
+    parser.add_argument('--https', type=bool, default=USE_HTTPS, help='Use HTTPS instead of HTTP')
 
     # Capture settings
     parser.add_argument('-f', '--frequency', type=int, default=60,
@@ -193,7 +193,7 @@ View codes:
     parser.add_argument('--once', action='store_true', help='Capture once and exit (no loop)')
 
     # View settings
-    parser.add_argument('-v', '--views', nargs='+', default=[],
+    parser.add_argument('-v', '--views', nargs='+', default='B',
                         choices=['N', 'S', 'E', 'W', 'B', 'n', 's', 'e', 'w', 'b'],
                         help='Views to send to LLM: N(orth), S(outh), E(ast), W(est), B(elow)')
     parser.add_argument('--fov', type=int, default=90, help='Field of view in degrees (default: 90)')
@@ -202,7 +202,7 @@ View codes:
 
     # LLM settings
     parser.add_argument('--prompt', type=str, default=None, help='Prompt to send to LLM')
-    parser.add_argument('--api-key', type=str, default=os.environ.get('OPENAI_API_KEY'),
+    parser.add_argument('--api-key', type=str, default=OPENAI_API_KEY,
                         help='OpenAI API key (default: from OPENAI_API_KEY env var)')
 
     args = parser.parse_args()

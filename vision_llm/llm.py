@@ -31,5 +31,8 @@ def analyze_with_openai(image_base64, prompt, api_key):
 
     content = response.choices[0].message.content
     content = content.split("```JSON", 1)[-1].rsplit("```", 1)[0]
-    content = json.loads(content)
+    try:
+        content = json.loads(content)
+    except json.JSONDecodeError:
+        pass
     return content

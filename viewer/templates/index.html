@@ -131,8 +131,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Camera Session Viewer</h1>
-        <p class="subtitle">Select a session to view captured images and analysis</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>Camera Session Viewer</h1>
+                <p class="subtitle">Select a session to view captured images and analysis</p>
+            </div>
+            <a href="/camera" class="back-button">Camera Control</a>
+        </div>
 
         {% if sessions %}
         <div class="sessions-grid">
