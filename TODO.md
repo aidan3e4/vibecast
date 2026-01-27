@@ -10,3 +10,4 @@ Deployment:
 Engineer debt / optimizations:
 - make LLM client async --> use vllm
 - split vision_llm into a CV part and an LLM part
+- before unwarping should check if the unwarped does not already exists (unwarping is fast though)

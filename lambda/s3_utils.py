@@ -74,7 +74,7 @@ def upload_json_to_s3(
     return f"s3://{bucket}/{key}"
 
 
-def generate_output_prefix(input_key: str) -> str:
+def generate_output_prefix(input_key: str, main_dir: str) -> str:
     """Generate an output prefix based on input key and timestamp.
 
     Example: input "images/camera1/2026-01-27/img001.jpg"
@@ -87,9 +87,10 @@ def generate_output_prefix(input_key: str) -> str:
     # Generate timestamp
     now = datetime.utcnow()
     date_path = now.strftime("%Y/%m/%d")
-    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    
+    assembled_path = f"{main_dir}/{date_path}/{name_without_ext}"
 
-    return f"processed/{date_path}/{name_without_ext}_{timestamp}"
+    return assembled_path
 
 
 def parse_s3_uri(uri: str) -> tuple[str, str]:

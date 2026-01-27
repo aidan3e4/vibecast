@@ -5,17 +5,17 @@ Description: Vibecast fisheye image processing Lambda
 Parameters:
   InputBucket:
     Type: String
-    Default: vibecast-input
+    Default: vibecast-ftp
     Description: S3 bucket for input fisheye images
 
   OutputBucket:
     Type: String
-    Default: vibecast-output
+    Default: vibecast-ftp
     Description: S3 bucket for unwarped images
 
   ResultsBucket:
     Type: String
-    Default: vibecast-results
+    Default: vibecast-ftp
     Description: S3 bucket for analysis results
 
   # Option A: Pass API key directly (simpler, less secure)

@@ -39,9 +39,9 @@ def _get_openai_key() -> str:
 
 class Config:
     # S3 Buckets
-    INPUT_BUCKET = os.environ.get("INPUT_BUCKET", "vibecast-input")
-    OUTPUT_BUCKET = os.environ.get("OUTPUT_BUCKET", "vibecast-output")
-    RESULTS_BUCKET = os.environ.get("RESULTS_BUCKET", "vibecast-results")
+    INPUT_BUCKET = os.environ["INPUT_BUCKET"]
+    OUTPUT_BUCKET = os.environ["OUTPUT_BUCKET"]
+    RESULTS_BUCKET = os.environ["RESULTS_BUCKET"]
 
     # Processing defaults
     DEFAULT_FOV = int(os.environ.get("DEFAULT_FOV", "90"))

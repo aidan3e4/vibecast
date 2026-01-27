@@ -82,6 +82,8 @@ def process_image(
     results_bucket = results_bucket or Config.RESULTS_BUCKET
     prompt = prompt or Config.DEFAULT_PROMPT
 
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     # Normalize view names
     if views_to_analyze:
         views_to_analyze = [
@@ -99,7 +101,8 @@ def process_image(
     fisheye_img = download_image_from_s3(input_bucket, input_key)
 
     # Generate output prefix
-    output_prefix = generate_output_prefix(input_key)
+    output_unwarp_prefix = generate_output_prefix(input_key, "unwarped")
+    output_results_prefix = generate_output_prefix(input_key, "results")
 
     # Unwarp to 5 perspective views
     views = unwarp_fisheye_image(fisheye_img, fov=fov, view_angle=view_angle)
@@ -107,7 +110,7 @@ def process_image(
     # Upload unwarped images to S3
     unwarped_uris = {}
     for direction, img in views.items():
-        key = f"{output_prefix}/{direction.lower()}.jpg"
+        key = f"{output_unwarp_prefix}_{direction.lower()}.jpg"
         uri = upload_image_to_s3(img, output_bucket, key)
         unwarped_uris[direction] = uri
 
@@ -140,7 +143,7 @@ def process_image(
     }
 
     # Upload results JSON
-    results_key = f"{output_prefix}/results.json"
+    results_key = f"{output_results_prefix}_results_{timestamp}.json"
     results_uri = upload_json_to_s3(results, results_bucket, results_key)
     results["results_uri"] = results_uri
 
