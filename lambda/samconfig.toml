@@ -7,17 +7,15 @@ version = 0.1
 stack_name = "vibecast-lambda"
 resolve_s3 = true
 s3_prefix = "vibecast-lambda"
-region = "us-east-1"
+region = "eu-central-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 
 parameter_overrides = [
-    "InputBucket=vibecast-input",
-    "OutputBucket=vibecast-output",
-    "ResultsBucket=vibecast-results",
+    "InputBucket=vibecast-ftp",
+    "OutputBucket=vibecast-ftp",
+    "ResultsBucket=vibecast-ftp",
     "EnableApiGateway=false",
-    # Don't put secrets here - use option 2 or 3 below
-    # "OpenAIApiKey=sk-xxx"
 ]
 
 [default.build.parameters]
