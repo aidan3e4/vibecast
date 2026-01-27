@@ -38,7 +38,6 @@ packages = [
   "reolinkapi",
   "app",
   "vision_llm",
-  "ftp_server"
 ]
 
 [tool.ruff]

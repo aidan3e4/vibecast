@@ -45,7 +45,6 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY reolinkapi/ ./reolinkapi/
 COPY vision_llm/ ./vision_llm/
 COPY app/ ./app/
-COPY ftp_server/ ./ftp_server/
 COPY pyproject.toml constants.py Makefile ./
 
 # Copy entrypoint script

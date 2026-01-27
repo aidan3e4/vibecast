@@ -1,23 +1,19 @@
-.PHONY: capture viewer help ip ftp test-ftp
+.PHONY: capture viewer help ip
 
 help:
 	@echo "Available commands:"
 	@echo "  make viewer    - Start the session viewer web UI"
 	@echo "  make capture   - Run camera capture (pass args with ARGS='...')"
-	@echo "  make ftp       - Start FTP server for camera uploads"
-	@echo "  make test-ftp  - Test FTP server connection"
 	@echo "  make ip        - Show local IP address for network access"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make viewer"
 	@echo "  make capture ARGS='--once'"
 	@echo "  make capture ARGS='-f 30 -v N S E W'"
-	@echo "  make ftp"
 	@echo ""
 	@echo "Network Access:"
 	@echo "  Run 'make ip' to see your local IP address"
 	@echo "  Others on your WiFi can access at http://YOUR_IP:8000"
-	@echo "  FTP server runs on port 2121 (configurable in .env)"
 
 ip:
 	@echo "Your local IP addresses:"
@@ -43,15 +39,3 @@ analyzer:
 	@echo "Configure in .env file"
 	@echo ""
 	@python3 -m app.analyzer
-
-ftp:
-	@echo "Starting FTP server..."
-	@echo "Configure in .env file"
-	@echo ""
-	@python3 ftp_server/server.py
-
-test-ftp:
-	@echo "Testing FTP server connection..."
-	@echo "(Make sure FTP server is running first: make ftp)"
-	@echo ""
-	@python3 ftp_server/test_ftp.py

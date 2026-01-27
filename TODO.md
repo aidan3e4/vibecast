@@ -9,9 +9,6 @@ Viewer / UI:
 - there is a bug in make viewer -- check logs
 
 Deployment:
-- check reolink upload
-    - to S3 by FTP
-    - find if raspberry pi is needed to upload
 - figure out how to decouple upload from processing. Can the orange pi do all the processing ? The LLM call is fine, the unwarping and all is probably not
 - deploy a serverless function to process on runpod
 - best practice to inject some vars into the script, for now they're copied from local repo
@@ -19,10 +16,8 @@ Deployment:
 Engineer debt / optimizations:
 - make LLM client async --> use vllm
 - split vision_llm into a CV part and an LLM part
-- upload the data with FTPS instead of FTP (more secure)
 
 
 Simplify the way we connect the cam
 - deploy on runpod and test
 - make it easy to setup the camera on a new wifi -- i.e., permamnent url, etc
-- setup FTP to not be on disk, because we need it to be permanent. S3 ? minio ? etc
