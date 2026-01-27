@@ -1,13 +1,14 @@
 import string
+from io import BytesIO
 from random import choices
 from typing import Any, Optional
 from urllib import parse
-from io import BytesIO
 
 import requests
 
 try:
-    from PIL.Image import Image, open as open_image
+    from PIL.Image import Image
+    from PIL.Image import open as open_image
 
     from reolinkapi.utils.rtsp_client import RtspClient
 
@@ -59,9 +60,9 @@ except ImportError as err:
         """ API calls for opening a video stream or capturing an image from the camera."""
 
         def open_video_stream(self, callback: Any = None, proxies: Any = None) -> Any:
-            raise ImportError(f'open_video_stream requires streaming extra dependencies\nFor instance "pip install '
-                              f'reolinkapi[streaming]"')
+            raise ImportError('open_video_stream requires streaming extra dependencies\nFor instance "pip install '
+                              'reolinkapi[streaming]"')
 
         def get_snap(self, timeout: float = 3, proxies: Any = None) -> Optional['Image']:
             raise ImportError(
-                f'get_snap requires streaming extra dependencies\nFor instance "pip install reolinkapi[streaming]"')
+                'get_snap requires streaming extra dependencies\nFor instance "pip install reolinkapi[streaming]"')

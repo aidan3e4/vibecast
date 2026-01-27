@@ -1,6 +1,7 @@
 import os
-from configparser import RawConfigParser
 import unittest
+from configparser import RawConfigParser
+
 from reolinkapi import Camera
 
 

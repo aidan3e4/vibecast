@@ -4,10 +4,11 @@ Simple FTP test script to verify the server is working.
 """
 
 import os
+import tempfile
 from ftplib import FTP
 from pathlib import Path
+
 from dotenv import load_dotenv
-import tempfile
 
 load_dotenv()
 
@@ -93,7 +94,7 @@ def test_ftp_connection():
         print("✓ ALL TESTS PASSED")
         print("=" * 60)
         print("\nYour FTP server is working correctly!")
-        print(f"You can configure your Reolink camera to upload to:")
+        print("You can configure your Reolink camera to upload to:")
         print(f"  Server: {FTP_HOST}")
         print(f"  Port: {FTP_PORT}")
         print(f"  User: {FTP_USER}")

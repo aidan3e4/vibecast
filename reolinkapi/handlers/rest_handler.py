@@ -1,5 +1,6 @@
+from typing import Dict, List, Optional, Union
+
 import requests
-from typing import List, Dict, Union, Optional
 
 
 class Request:

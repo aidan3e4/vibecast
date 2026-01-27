@@ -1,15 +1,16 @@
-import sys
 import os
+import sys
 from configparser import RawConfigParser
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtMultimediaWidgets import QVideoWidget
-from PyQt6.QtCore import Qt, QUrl, QTimer
-from PyQt6.QtGui import QWheelEvent
-from reolinkapi import Camera
-from threading import Lock
 
 import urllib3
+from PyQt6.QtCore import Qt, QTimer, QUrl
+from PyQt6.QtGui import QWheelEvent
+from PyQt6.QtMultimedia import QMediaPlayer
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QSlider, QWidget
+
+from reolinkapi import Camera
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def read_config(props_path: str) -> dict:

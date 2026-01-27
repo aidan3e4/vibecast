@@ -1,24 +1,42 @@
 # Video review GUI
 # https://github.com/sven337/ReolinkLinux/wiki#reolink-video-review-gui
 
-import os
-import signal
-import sys
-import re
-import datetime
-import subprocess
 import argparse
-from configparser import RawConfigParser
-from datetime import datetime as dt, timedelta
-from reolinkapi import Camera
-from PyQt6.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QLabel, QFileDialog, QHeaderView, QStyle, QSlider, QStyleOptionSlider, QSplitter, QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtMultimediaWidgets import QVideoWidget
-from PyQt6.QtCore import Qt, QUrl, QTimer, QThread, pyqtSignal, QMutex, QWaitCondition
-from PyQt6.QtGui import QColor, QBrush, QFont, QIcon
+import datetime
+import os
+import re
+import signal
+import subprocess
+import sys
 from collections import deque
+from configparser import RawConfigParser
+from datetime import datetime as dt
+from datetime import timedelta
 
 import urllib3
+from PyQt6.QtCore import QMutex, Qt, QThread, QTimer, QUrl, QWaitCondition, pyqtSignal
+from PyQt6.QtGui import QBrush, QColor, QFont, QIcon
+from PyQt6.QtMultimedia import QMediaPlayer
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtWidgets import (
+   QApplication,
+   QFileDialog,
+   QHBoxLayout,
+   QLabel,
+   QPushButton,
+   QSlider,
+   QSplitter,
+   QStyle,
+   QStyleOptionSlider,
+   QTreeWidget,
+   QTreeWidgetItem,
+   QTreeWidgetItemIterator,
+   QVBoxLayout,
+   QWidget,
+)
+
+from reolinkapi import Camera
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def path_name_from_camera_path(fname):
@@ -63,7 +81,6 @@ def parse_filename(file_name):
     version = 0
 
     if match:
-        date = match.group(1)  # YYYY-MM-DD
         channel = int(match.group(2))  
         version = int(match.group(3)) # version
         start_date = match.group(5)  # YYYYMMDD
@@ -86,7 +103,7 @@ def parse_filename(file_name):
 
         animal_type = match.group(1)
         flags_hex1 = match.group(2)
-        flags_hex2 = match.group(3)
+        _ = match.group(3)
         file_size = int(match.group(4), 16)
 
         triggers = decode_hex_to_flags(flags_hex1)

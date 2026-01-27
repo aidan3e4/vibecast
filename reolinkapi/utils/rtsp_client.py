@@ -1,7 +1,9 @@
 import os
 from threading import ThreadError
 from typing import Any
+
 import cv2
+
 from reolinkapi.utils.util import threaded
 
 

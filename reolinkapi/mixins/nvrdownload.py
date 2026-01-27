@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 
+
 class NvrDownloadAPIMixin:
     """API calls for NvrDownload."""
     def get_playback_files(self, start: dt, end: dt = dt.now(), channel: int = 0,

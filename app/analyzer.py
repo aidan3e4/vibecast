@@ -9,23 +9,22 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 import cv2
-import numpy as np
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from starlette.requests import Request
-from dotenv import load_dotenv
 
 from constants import app_dir, data_dir, ftp_uploads_dir
 from vision_llm import (
+    analyze_with_openai,
     get_room_views,
     image_to_base64,
     save_image,
-    analyze_with_openai,
 )
 
 load_dotenv()

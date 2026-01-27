@@ -1,6 +1,5 @@
-from typing import Union, List, Dict
 from datetime import datetime as dt
-
+from typing import Dict, List, Union
 
 # Type hints for input and output of the motion api response
 RAW_MOTION_LIST_TYPE = List[Dict[str, Union[str, float, Dict[str, str]]]]

@@ -1,7 +1,9 @@
 """Downloads all motion events from camera from the past hour."""
 import os
 from configparser import RawConfigParser
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
+from datetime import timedelta
+
 from reolinkapi import Camera
 
 

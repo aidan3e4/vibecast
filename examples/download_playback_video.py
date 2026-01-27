@@ -1,10 +1,11 @@
 """Downloads a video from camera from start to end time."""
 import os
 from configparser import RawConfigParser
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
+from datetime import timedelta
+
 from reolinkapi import Camera
-import requests
-import pandas as pd
+
 
 def read_config(props_path: str) -> dict:
     """Reads in a properties file into variables.

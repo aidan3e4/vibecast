@@ -1,8 +1,9 @@
+import requests
+import urllib3
+from urllib3.util import create_urllib3_context
+
 from reolinkapi import Camera
 
-import urllib3
-import requests
-from urllib3.util import create_urllib3_context
 
 class CustomSSLContextHTTPAdapter(requests.adapters.HTTPAdapter):
     def __init__(self, ssl_context=None, **kwargs):

@@ -7,24 +7,23 @@ generates perspective views, and optionally sends them to an LLM for analysis.
 """
 
 import argparse
-from datetime import datetime
-from dotenv import load_dotenv
 import json
 import os
-from pathlib import Path
 import time
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
+from dotenv import load_dotenv
 
-from constants import vision_llm_dir, data_dir
+from constants import data_dir, vision_llm_dir
 from reolinkapi import Camera
 from vision_llm import (
+    analyze_with_openai,
     get_room_views,
     image_to_base64,
     save_image,
-    analyze_with_openai,
 )
-
 
 load_dotenv()
 

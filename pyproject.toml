@@ -50,5 +50,7 @@ ignore = ["E501"]
 
 [dependency-groups]
 dev = [
+    "flake8>=7.3.0",
     "ipykernel>=7.1.0",
+    "ruff>=0.14.13",
 ]
