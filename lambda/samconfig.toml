@@ -1,0 +1,24 @@
+# SAM deployment configuration
+# Values here are used by 'sam deploy' (no need to pass --parameter-overrides)
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "vibecast-lambda"
+resolve_s3 = true
+s3_prefix = "vibecast-lambda"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+
+parameter_overrides = [
+    "InputBucket=vibecast-input",
+    "OutputBucket=vibecast-output",
+    "ResultsBucket=vibecast-results",
+    "EnableApiGateway=false",
+    # Don't put secrets here - use option 2 or 3 below
+    # "OpenAIApiKey=sk-xxx"
+]
+
+[default.build.parameters]
+use_container = false

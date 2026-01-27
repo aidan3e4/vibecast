@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Vibecast fisheye image processing Lambda
+
+Parameters:
+  InputBucket:
+    Type: String
+    Default: vibecast-input
+    Description: S3 bucket for input fisheye images
+
+  OutputBucket:
+    Type: String
+    Default: vibecast-output
+    Description: S3 bucket for unwarped images
+
+  ResultsBucket:
+    Type: String
+    Default: vibecast-results
+    Description: S3 bucket for analysis results
+
+  # Option A: Pass API key directly (simpler, less secure)
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: OpenAI API key (leave empty if using Secrets Manager)
+
+  # Option B: Use Secrets Manager (recommended for production)
+  OpenAISecretName:
+    Type: String
+    Default: ""
+    Description: Secrets Manager secret name containing OPENAI_API_KEY
+
+  EnableApiGateway:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Enable HTTP API Gateway endpoint
+
+Conditions:
+  CreateApiGateway: !Equals [!Ref EnableApiGateway, "true"]
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 1024
+    Runtime: python3.11
+    Architectures:
+      - x86_64
+
+Resources:
+  # Main processing function - invoke via CLI, SDK, or API Gateway
+  ProcessImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vibecast-process-image
+      CodeUri: .
+      Handler: handler.lambda_handler
+      Description: Process fisheye images - unwarp and analyze with LLM
+      Environment:
+        Variables:
+          INPUT_BUCKET: !Ref InputBucket
+          OUTPUT_BUCKET: !Ref OutputBucket
+          RESULTS_BUCKET: !Ref ResultsBucket
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          OPENAI_SECRET_NAME: !Ref OpenAISecretName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref InputBucket
+        - S3CrudPolicy:
+            BucketName: !Ref OutputBucket
+        - S3CrudPolicy:
+            BucketName: !Ref ResultsBucket
+        # Allow reading from Secrets Manager (if using Option B)
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+      Events:
+        # HTTP endpoint (only if EnableApiGateway=true)
+        HttpApi:
+          Type: HttpApi
+          Condition: CreateApiGateway
+          Properties:
+            Path: /process
+            Method: POST
+
+Outputs:
+  FunctionArn:
+    Description: Lambda function ARN (use with 'aws lambda invoke' or boto3)
+    Value: !GetAtt ProcessImageFunction.Arn
+
+  FunctionName:
+    Description: Lambda function name
+    Value: !Ref ProcessImageFunction
+
+  ApiEndpoint:
+    Condition: CreateApiGateway
+    Description: HTTP API endpoint URL
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/process"
+
+# ============================================================================
+# OPTIONAL: S3 Auto-Trigger
+# Uncomment below to automatically process images when uploaded to input bucket
+# ============================================================================
+#
+#  S3TriggerFunction:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      FunctionName: vibecast-s3-trigger
+#      CodeUri: .
+#      Handler: handler.s3_trigger_handler
+#      Description: Triggered when new image is uploaded
+#      Environment:
+#        Variables:
+#          INPUT_BUCKET: !Ref InputBucket
+#          OUTPUT_BUCKET: !Ref OutputBucket
+#          RESULTS_BUCKET: !Ref ResultsBucket
+#          OPENAI_API_KEY: !Ref OpenAIApiKey
+#      Policies:
+#        - S3ReadPolicy:
+#            BucketName: !Ref InputBucket
+#        - S3CrudPolicy:
+#            BucketName: !Ref OutputBucket
+#        - S3CrudPolicy:
+#            BucketName: !Ref ResultsBucket
+#      Events:
+#        S3Event:
+#          Type: S3
+#          Properties:
+#            Bucket: !Ref InputImageBucket
+#            Events: s3:ObjectCreated:*
+#            Filter:
+#              S3Key:
+#                Rules:
+#                  - Name: suffix
+#                    Value: .jpg
+#
+#  InputImageBucket:
+#    Type: AWS::S3::Bucket
+#    Properties:
+#      BucketName: !Ref InputBucket
