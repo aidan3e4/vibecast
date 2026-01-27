@@ -163,7 +163,6 @@ vibecast/
 │   ├── viewer.py      # Web viewer application
 │   └── templates/     # HTML templates
 ├── ftp_server/        # FTP server for camera uploads
-├── uploader/          # Streaming service (self-contained)
 ├── data/              # Captured sessions (auto-created)
 ├── .env               # Configuration
 └── Makefile           # Shortcuts

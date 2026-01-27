@@ -1,3 +1,0 @@
-# FTP Server Dependencies
-pyftpdlib>=1.5.7
-python-dotenv>=1.0.0

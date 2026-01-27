@@ -150,14 +150,3 @@ docker buildx build --platform linux/arm64 -t reolink-camera-client:arm64 .
 # Build for AMD64
 docker buildx build --platform linux/amd64 -t reolink-camera-client:amd64 .
 ```
-
-## Alternative: Snapshot Uploader
-
-For resource-constrained devices (Raspberry Pi, Orange Pi), consider using the lighter `snapshot-uploader` service instead, which has minimal dependencies:
-
-```bash
-cd snapshot-uploader
-docker-compose up -d
-```
-
-See [snapshot-uploader/README.md](snapshot-uploader/README.md) for details.
