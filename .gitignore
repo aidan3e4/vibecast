@@ -64,3 +64,6 @@ venv/
 .env
 data/*
 .vscode/*
+
+# AWS SAM
+.aws-sam/
