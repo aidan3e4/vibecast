@@ -1,9 +1,9 @@
 .PHONY: build invoke-local test-mock test-local deploy clean
 
-# Build the Lambda package
+# Build the Lambda container image
 build:
 	cp -r ../vision_llm ./vision_llm
-	sam build
+	sam build --debug
 	rm -rf ./vision_llm
 
 # Run Lambda locally with SAM (requires Docker)
@@ -27,24 +27,18 @@ test-file:
 	@test -n "$(FILE)" || (echo "ERROR: FILE not specified" && exit 1)
 	python test_local.py --local-file $(FILE)
 
-# Run handler directly (local execution with real S3)
-run:
-	@echo "Usage: make run URI=s3://bucket/image.jpg"
-	@test -n "$(URI)" || (echo "ERROR: URI not specified" && exit 1)
-	python -m lambda.handler $(URI)
-
 # Invoke deployed Lambda remotely
 run-remote:
 	@echo "Usage: make run-remote URI=s3://bucket/image.jpg"
 	@test -n "$(URI)" || (echo "ERROR: URI not specified" && exit 1)
-	python -m lambda.handler $(URI) --remote
+	python cli.py $(URI)
 
 # Deploy to AWS
 deploy: build
-	sam deploy
+	sam deploy --resolve-image-repos
 
 deploy-guided: build
-	sam deploy --guided
+	sam deploy --guided --resolve-image-repos
 
 # Clean build artifacts
 clean:
@@ -59,7 +53,6 @@ help:
 	@echo "  test-mock            - Test with mocked S3 (no AWS/Docker needed)"
 	@echo "  test-validate        - Test error handling"
 	@echo "  test-file FILE=x     - Test with a local image file"
-	@echo "  run URI=s3://...     - Run handler locally (real S3)"
 	@echo "  run-remote URI=...   - Invoke deployed Lambda"
 	@echo "  deploy               - Deploy to AWS"
 	@echo "  deploy-guided        - Interactive deployment"

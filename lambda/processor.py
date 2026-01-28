@@ -9,8 +9,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vision_llm import get_room_views, analyze_with_openai, image_to_base64
 
-from .config import Config, _get_openai_key
-from .s3_utils import (
+from config import Config, _get_openai_key
+from s3_utils import (
     download_image_from_s3,
     upload_image_to_s3,
     upload_json_to_s3,

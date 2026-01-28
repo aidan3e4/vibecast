@@ -4,7 +4,7 @@ import logging
 import traceback
 from typing import Any
 
-from .processor import process_image
+from processor import process_image
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

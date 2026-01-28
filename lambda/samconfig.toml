@@ -11,12 +11,8 @@ region = "eu-central-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 
-parameter_overrides = [
-    "InputBucket=vibecast-ftp",
-    "OutputBucket=vibecast-ftp",
-    "ResultsBucket=vibecast-ftp",
-    "EnableApiGateway=false",
-]
+parameter_overrides = "InputBucket=\"vibecast-ftp\" OutputBucket=\"vibecast-ftp\" ResultsBucket=\"vibecast-ftp\" OpenAISecretName=\"\" EnableApiGateway=\"false\""
+image_repositories = []
 
 [default.build.parameters]
 use_container = false
