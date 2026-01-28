@@ -37,6 +37,9 @@ run-remote:
 deploy: build
 	sam deploy --resolve-image-repos
 
+deploy-yes: build
+	sam deploy --resolve-image-repos --no-confirm-changeset
+
 deploy-guided: build
 	sam deploy --guided --resolve-image-repos
 
@@ -55,5 +58,6 @@ help:
 	@echo "  test-file FILE=x     - Test with a local image file"
 	@echo "  run-remote URI=...   - Invoke deployed Lambda"
 	@echo "  deploy               - Deploy to AWS"
+	@echo "  deploy-yes           - Deploy without confirmation prompt"
 	@echo "  deploy-guided        - Interactive deployment"
 	@echo "  clean                - Remove build artifacts"
