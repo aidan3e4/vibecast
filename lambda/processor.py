@@ -1,22 +1,22 @@
 """Image processing logic - unwarp fisheye and analyze with LLM."""
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 # Add parent directory to path to import vision_llm
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from vision_llm import get_room_views, analyze_with_openai, image_to_base64
-
 from config import Config, _get_openai_key
 from s3_utils import (
     download_image_from_s3,
-    upload_image_to_s3,
-    upload_json_to_s3,
     generate_output_prefix,
     parse_s3_uri,
+    upload_image_to_s3,
+    upload_json_to_s3,
 )
+
+from vision_llm import analyze_with_openai, get_room_views, image_to_base64
 
 
 def unwarp_fisheye_image(

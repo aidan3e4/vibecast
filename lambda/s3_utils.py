@@ -1,14 +1,10 @@
 """S3 utilities for reading and writing images and results."""
 import json
-import io
-from datetime import datetime
 from typing import Any
 
 import boto3
 import cv2
 import numpy as np
-from PIL import Image
-
 
 s3_client = boto3.client("s3")
 

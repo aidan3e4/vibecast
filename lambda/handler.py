@@ -131,8 +131,8 @@ def s3_trigger_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 # ============================================================================
 if __name__ == "__main__":
     import argparse
-    import sys
     import os
+    import sys
 
     # Fix imports when running as script
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

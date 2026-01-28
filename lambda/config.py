@@ -1,6 +1,6 @@
 """Configuration for the Lambda function."""
-import os
 import json
+import os
 from functools import lru_cache
 
 
