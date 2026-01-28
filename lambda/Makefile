@@ -29,9 +29,9 @@ test-file:
 
 # Invoke deployed Lambda remotely
 run-remote:
-	@echo "Usage: make run-remote URI=s3://bucket/image.jpg"
+	@echo "Usage: make run-remote URI=s3://bucket/image.jpg [ARGS='--views N']"
 	@test -n "$(URI)" || (echo "ERROR: URI not specified" && exit 1)
-	python cli.py $(URI)
+	python cli.py $(URI) $(ARGS)
 
 # Deploy to AWS
 deploy: build

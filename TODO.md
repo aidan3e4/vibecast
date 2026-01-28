@@ -4,7 +4,6 @@ Product:
 - add some sort of memory: either pass in previous state, or what
 
 Deployment:
-- best practice to inject some vars into the script, for now they're copied from local repo
 
 Engineering:
 - make LLM client async --> use vllm
