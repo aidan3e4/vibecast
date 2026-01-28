@@ -81,14 +81,10 @@ def generate_output_prefix(input_key: str, main_dir: str) -> str:
              output "processed/2026/01/27/img001_20260127_143052/"
     """
     # Extract filename without extension
-    filename = input_key.rsplit("/", 1)[-1]
+    dir, filename = input_key.split("/", 1)
     name_without_ext = filename.rsplit(".", 1)[0]
 
-    # Generate timestamp
-    now = datetime.utcnow()
-    date_path = now.strftime("%Y/%m/%d")
-    
-    assembled_path = f"{main_dir}/{date_path}/{name_without_ext}"
+    assembled_path = f"{main_dir}/{name_without_ext}"
 
     return assembled_path
 

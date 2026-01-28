@@ -35,4 +35,4 @@ def analyze_with_openai(image_base64, prompt, api_key):
         content = json.loads(content)
     except json.JSONDecodeError:
         pass
-    return content
+    return content # TODO: fix since now it's either a dict or a string
