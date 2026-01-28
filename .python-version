@@ -1,1 +1,4 @@
 3.12.12
+
+# we cannot use 3.13 as of Jan 2026 since there are no existing numpy > 2.x
+# wheels and pip has to compile it which is a bit annoying (and even failed)

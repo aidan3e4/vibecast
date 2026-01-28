@@ -1,5 +1,5 @@
-Product: 
-- write better analysis prompt: figure out what to extract
+Product:
+- write better analysis prompt: figure out what to extract and do it properly
 - add prompt versioning
 - add some sort of memory: either pass in previous state, or what
 
