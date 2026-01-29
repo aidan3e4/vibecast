@@ -46,20 +46,28 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     logger.info(f"Received event: {json.dumps(event)}")
 
     try:
+        # Parse event - handle both direct invocation and API Gateway
+        if "body" in event and isinstance(event["body"], str):
+            # API Gateway v2 format - body is a JSON string
+            params = json.loads(event["body"])
+        else:
+            # Direct Lambda invocation - parameters at top level
+            params = event
+
         # Extract parameters from event
-        input_s3_uri = event.get("input_s3_uri")
+        input_s3_uri = params.get("input_s3_uri")
         if not input_s3_uri:
             return {
                 "statusCode": 400,
                 "body": {"error": "Missing required parameter: input_s3_uri"}
             }
 
-        views_to_analyze = event.get("views_to_analyze")
-        prompt = event.get("prompt")
-        output_bucket = event.get("output_bucket")
-        results_bucket = event.get("results_bucket")
-        fov = event.get("fov")
-        view_angle = event.get("view_angle")
+        views_to_analyze = params.get("views_to_analyze")
+        prompt = params.get("prompt")
+        output_bucket = params.get("output_bucket")
+        results_bucket = params.get("results_bucket")
+        fov = params.get("fov")
+        view_angle = params.get("view_angle")
 
         # Process the image
         result = process_image(
