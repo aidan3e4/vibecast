@@ -15,30 +15,38 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     Event schema:
     {
-        "input_s3_uri": "s3://bucket/path/to/fisheye.jpg",  # Required
-        "views_to_analyze": ["N", "S", "E", "W", "B"],      # Optional, which views to send to LLM
+        "input_s3_uri": "s3://bucket/path/to/image.jpg",    # Required
+        "unwarp": true,                                      # Perform fisheye unwarping
+        "analyze": true,                                     # Perform LLM analysis
+        "views_to_analyze": ["N", "S", "E", "W", "B"],      # Which views to analyze (unwarp mode only)
         "prompt": "Custom analysis prompt...",              # Optional
         "output_bucket": "custom-output-bucket",            # Optional, override default
         "results_bucket": "custom-results-bucket",          # Optional, override default
-        "fov": 90,                                          # Optional, field of view
-        "view_angle": 45                                    # Optional, elevation angle
+        "fov": 90,                                          # Optional, field of view (unwarp mode)
+        "view_angle": 45                                    # Optional, elevation angle (unwarp mode)
     }
+
+    Use cases:
+    1. Unwarp only: unwarp=true, analyze=false
+       - Input: fisheye image
+       - Output: 5 unwarped perspective views (N, S, E, W, Below)
+
+    2. Analyze only: unwarp=false, analyze=true
+       - Input: already unwarped image
+       - Output: LLM analysis of the image
+
+    3. Unwarp + Analyze: unwarp=true, analyze=true
+       - Input: fisheye image
+       - Output: 5 unwarped views + LLM analysis of specified views
 
     Returns:
     {
         "statusCode": 200,
         "body": {
             "input_uri": "s3://...",
-            "unwarped_images": {
-                "North": "s3://output-bucket/processed/.../north.jpg",
-                "South": "s3://output-bucket/processed/.../south.jpg",
-                ...
-            },
-            "analysis_results": {
-                "North": {"mood": "...", "number_of_people": 0, ...},
-                ...
-            },
-            "results_uri": "s3://results-bucket/processed/.../results.json",
+            "unwarped_images": {...},        # Only if unwarp=true
+            "analysis_results": {...},       # Only if analyze=true
+            "results_uri": "s3://...",
             "processed_at": "2026-01-27T14:30:52Z"
         }
     }
@@ -59,7 +67,19 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         if not input_s3_uri:
             return {
                 "statusCode": 400,
-                "body": {"error": "Missing required parameter: input_s3_uri"}
+                "body": json.dumps({"error": "Missing required parameter: input_s3_uri"})
+            }
+
+        unwarp = params.get("unwarp", False)
+        analyze = params.get("analyze", False)
+
+        # Validate: at least one operation must be specified
+        if not unwarp and not analyze:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({
+                    "error": "At least one operation must be specified: unwarp=true or analyze=true"
+                })
             }
 
         views_to_analyze = params.get("views_to_analyze")
@@ -72,6 +92,8 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # Process the image
         result = process_image(
             input_s3_uri=input_s3_uri,
+            unwarp=unwarp,
+            analyze=analyze,
             views_to_analyze=views_to_analyze,
             prompt=prompt,
             output_bucket=output_bucket,
@@ -84,21 +106,21 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         return {
             "statusCode": 200,
-            "body": result
+            "body": json.dumps(result)
         }
 
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
         return {
             "statusCode": 400,
-            "body": {"error": str(e)}
+            "body": json.dumps({"error": str(e)})
         }
 
     except Exception as e:
         logger.error(f"Processing error: {str(e)}\n{traceback.format_exc()}")
         return {
             "statusCode": 500,
-            "body": {"error": f"Internal error: {str(e)}"}
+            "body": json.dumps({"error": f"Internal error: {str(e)}"})
         }
 
 
@@ -150,27 +172,53 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run locally (uses real S3, no Lambda deployment needed)
-  python handler.py s3://vibecast-ftp/path/image.jpg
+  # Unwarp fisheye image only (no analysis)
+  python handler.py s3://bucket/fisheye.jpg --unwarp
 
-  # With LLM analysis on specific views
-  python handler.py s3://bucket/image.jpg --views N S E
+  # Analyze an already unwarped image
+  python handler.py s3://bucket/unwarped.jpg --analyze
+
+  # Unwarp + analyze specific views
+  python handler.py s3://bucket/fisheye.jpg --unwarp --analyze --views N S E
+
+  # Unwarp + analyze all views
+  python handler.py s3://bucket/fisheye.jpg --unwarp --analyze
 
   # Invoke deployed Lambda instead of running locally
-  python handler.py s3://bucket/image.jpg --remote
+  python handler.py s3://bucket/image.jpg --unwarp --analyze --remote
         """,
     )
     parser.add_argument(
         "input_s3_uri",
-        help="S3 URI of the fisheye image",
+        help="S3 URI of the image",
+    )
+    parser.add_argument(
+        "--unwarp",
+        action="store_true",
+        help="Unwarp fisheye image into 5 perspective views",
+    )
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Analyze image(s) with LLM",
     )
     parser.add_argument(
         "--views", nargs="+",
-        help="Views to analyze with LLM (N, S, E, W, B)",
+        help="Views to analyze (N, S, E, W, B) - only for unwarp+analyze mode",
     )
     parser.add_argument(
         "--prompt",
         help="Custom prompt for LLM analysis",
+    )
+    parser.add_argument(
+        "--fov",
+        type=int,
+        help="Field of view in degrees (for unwarp)",
+    )
+    parser.add_argument(
+        "--view-angle",
+        type=int,
+        help="Elevation angle for cardinal directions (for unwarp)",
     )
     parser.add_argument(
         "--remote",
@@ -185,11 +233,23 @@ Examples:
 
     args = parser.parse_args()
 
-    event = {"input_s3_uri": args.input_s3_uri}
+    # Validate: at least one operation must be specified
+    if not args.unwarp and not args.analyze:
+        parser.error("At least one operation must be specified: --unwarp or --analyze")
+
+    event = {
+        "input_s3_uri": args.input_s3_uri,
+        "unwarp": args.unwarp,
+        "analyze": args.analyze,
+    }
     if args.views:
         event["views_to_analyze"] = args.views
     if args.prompt:
         event["prompt"] = args.prompt
+    if args.fov:
+        event["fov"] = args.fov
+    if args.view_angle:
+        event["view_angle"] = args.view_angle
 
     if args.remote:
         import boto3
