@@ -3,6 +3,8 @@ import json
 import os
 from functools import lru_cache
 
+from vision_llm import OpenAIModel
+
 
 @lru_cache(maxsize=1)
 def _get_secret(secret_name: str, region: str = None) -> dict:
@@ -51,6 +53,8 @@ class Config:
     DEFAULT_BELOW_FRACTION = 0.6
 
     # LLM - fetched lazily to support Secrets Manager
+    DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL") or OpenAIModel.GPT_4O
+
     @property
     def openai_api_key(self) -> str:
         return _get_openai_key()

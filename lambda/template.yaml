@@ -84,9 +84,16 @@ Resources:
           Properties:
             Path: /process
             Method: POST
+        # Models endpoint - returns available LLM models
+        ModelsApi:
+          Type: HttpApi
+          Condition: CreateApiGateway
+          Properties:
+            Path: /models
+            Method: GET
     Metadata:
-      Dockerfile: Dockerfile
-      DockerContext: .
+      Dockerfile: lambda/Dockerfile
+      DockerContext: ..
       DockerTag: latest
 
 Outputs:

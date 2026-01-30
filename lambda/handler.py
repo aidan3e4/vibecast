@@ -5,6 +5,7 @@ import traceback
 from typing import Any
 
 from processor import process_image
+from vision_llm import OpenAIModel
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -20,6 +21,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         "analyze": true,                                     # Perform LLM analysis
         "views_to_analyze": ["N", "S", "E", "W", "B"],      # Which views to analyze (unwarp mode only)
         "prompt": "Custom analysis prompt...",              # Optional
+        "model": "gpt-4o",                                  # Optional, OpenAI model
         "output_bucket": "custom-output-bucket",            # Optional, override default
         "results_bucket": "custom-results-bucket",          # Optional, override default
         "fov": 90,                                          # Optional, field of view (unwarp mode)
@@ -53,6 +55,10 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """
     logger.info(f"Received event: {json.dumps(event)}")
 
+    # Route to models_handler if this is a GET /models request
+    if event.get("rawPath") == "/models" or event.get("routeKey") == "GET /models":
+        return models_handler(event, context)
+
     try:
         # Parse event - handle both direct invocation and API Gateway
         if "body" in event and isinstance(event["body"], str):
@@ -84,6 +90,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         views_to_analyze = params.get("views_to_analyze")
         prompt = params.get("prompt")
+        model = params.get("model")
         output_bucket = params.get("output_bucket")
         results_bucket = params.get("results_bucket")
         fov = params.get("fov")
@@ -96,6 +103,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             analyze=analyze,
             views_to_analyze=views_to_analyze,
             prompt=prompt,
+            model=model,
             output_bucket=output_bucket,
             results_bucket=results_bucket,
             fov=fov,
@@ -156,6 +164,34 @@ def s3_trigger_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     }
 
 
+def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    """Return available models for the UI.
+
+    Can be mapped to GET /models in API Gateway.
+
+    Returns:
+    {
+        "statusCode": 200,
+        "body": {
+            "models": [
+                {"id": "gpt-4o", "name": "GPT_4O", "description": "...", "tier": "standard"},
+                ...
+            ],
+            "default": "gpt-4o"
+        }
+    }
+    """
+    from vision_llm import DEFAULT_MODEL
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "models": OpenAIModel.list_models(),
+            "default": str(DEFAULT_MODEL),
+        })
+    }
+
+
 # ============================================================================
 # CLI - run this file directly to invoke the Lambda
 # ============================================================================
@@ -211,6 +247,10 @@ Examples:
         help="Custom prompt for LLM analysis",
     )
     parser.add_argument(
+        "--model",
+        help="OpenAI model to use for analysis (default: gpt-4o)",
+    )
+    parser.add_argument(
         "--fov",
         type=int,
         help="Field of view in degrees (for unwarp)",
@@ -246,6 +286,8 @@ Examples:
         event["views_to_analyze"] = args.views
     if args.prompt:
         event["prompt"] = args.prompt
+    if args.model:
+        event["model"] = args.model
     if args.fov:
         event["fov"] = args.fov
     if args.view_angle:

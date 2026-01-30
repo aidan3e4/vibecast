@@ -12,6 +12,7 @@ from .fisheye import (
     get_room_views,
 )
 from .llm import analyze_with_openai
+from .models import DEFAULT_MODEL, OpenAIModel
 from .utils import (
     image_to_base64,
     save_image,
@@ -25,4 +26,6 @@ __all__ = [
     'analyze_with_openai',
     'image_to_base64',
     'save_image',
+    'OpenAIModel',
+    'DEFAULT_MODEL',
 ]

@@ -54,6 +54,7 @@ def process_image(
     analyze: bool = False,
     views_to_analyze: list[str] = None,
     prompt: str = None,
+    model: str = None,
     output_bucket: str = None,
     results_bucket: str = None,
     fov: int = None,
@@ -70,6 +71,7 @@ def process_image(
                          Only used when unwarp=True and analyze=True
                          If None when both flags are set, all views are analyzed
         prompt: Custom prompt for LLM analysis
+        model: OpenAI model to use for analysis (defaults to config)
         output_bucket: Bucket for unwarped images (defaults to config)
         results_bucket: Bucket for analysis results (defaults to config)
         fov: Field of view in degrees (for unwarping)
@@ -86,6 +88,7 @@ def process_image(
     output_bucket = output_bucket or Config.OUTPUT_BUCKET
     results_bucket = results_bucket or Config.RESULTS_BUCKET
     prompt = prompt or Config.DEFAULT_PROMPT
+    model = model or Config.DEFAULT_MODEL
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -137,6 +140,7 @@ def process_image(
             img_base64,
             prompt,
             _get_openai_key(),
+            model,
         )
         analysis_results["Image"] = result
 
@@ -171,6 +175,7 @@ def process_image(
                     img_base64,
                     prompt,
                     _get_openai_key(),
+                    model,
                 )
                 analysis_results[direction] = result
 
@@ -195,6 +200,7 @@ def process_image(
     if analysis_results:
         results["analysis_results"] = analysis_results
         results["config"]["prompt"] = prompt
+        results["config"]["model"] = model
 
     # Upload results JSON
     results_key = f"{output_results_prefix}_results_{timestamp}.json"

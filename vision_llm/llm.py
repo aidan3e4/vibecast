@@ -6,15 +6,17 @@ Functions for analyzing images using LLM APIs.
 
 import json
 
+from .models import DEFAULT_MODEL, OpenAIModel
 
-def analyze_with_openai(image_base64, prompt, api_key):
+
+def analyze_with_openai(image_base64, prompt, api_key, model: OpenAIModel | str = DEFAULT_MODEL):
     """Send image to OpenAI for analysis."""
     from openai import OpenAI
 
     client = OpenAI(api_key=api_key)
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=model,
         messages=[
             {
                 "role": "user",
