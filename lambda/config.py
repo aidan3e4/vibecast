@@ -3,7 +3,7 @@ import json
 import os
 from functools import lru_cache
 
-from vision_llm import OpenAIModel
+from vision_llm import OpenAIModel, get_default_prompt
 
 
 @lru_cache(maxsize=1)
@@ -62,7 +62,12 @@ class Config:
     # Class-level access (backwards compatible)
     OPENAI_API_KEY = property(lambda self: _get_openai_key())
 
-    DEFAULT_PROMPT = """Analyze this image. Describe what you see. Respond in the following JSON format
+    # Load default prompt from versioned prompts directory
+    try:
+        DEFAULT_PROMPT = get_default_prompt()
+    except FileNotFoundError:
+        # Fallback if prompts directory not available
+        DEFAULT_PROMPT = """Analyze this image. Describe what you see. Respond in the following JSON format
 
 ```JSON
 {

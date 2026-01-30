@@ -5,7 +5,14 @@ import traceback
 from typing import Any
 
 from processor import process_image
-from vision_llm import OpenAIModel
+from vision_llm import (
+    OpenAIModel,
+    create_prompt_line,
+    get_prompt,
+    get_prompt_names,
+    list_prompts,
+    push_prompt,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -58,6 +65,13 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     # Route to models_handler if this is a GET /models request
     if event.get("rawPath") == "/models" or event.get("routeKey") == "GET /models":
         return models_handler(event, context)
+
+    # Route to prompts handlers
+    raw_path = event.get("rawPath", "")
+    route_key = event.get("routeKey", "")
+
+    if raw_path.startswith("/prompts") or "prompts" in route_key:
+        return prompts_handler(event, context)
 
     try:
         # Parse event - handle both direct invocation and API Gateway
@@ -190,6 +204,135 @@ def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "default": str(DEFAULT_MODEL),
         })
     }
+
+
+def prompts_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    """Handle prompt versioning API requests.
+
+    Endpoints:
+        GET  /prompts              - List all prompts (names with latest versions)
+        GET  /prompts?all=true     - List all prompts with all versions
+        GET  /prompts/{name}       - Get latest version of a prompt
+        GET  /prompts/{name}/{ver} - Get specific version of a prompt
+        POST /prompts              - Create new prompt line or push new version
+
+    POST body for creating new prompt line:
+    {
+        "name": "my_prompt",
+        "content": "Analyze this image..."
+    }
+
+    POST body for pushing new version (name must already exist):
+    {
+        "name": "existing_prompt",
+        "content": "Updated prompt content..."
+    }
+    """
+    raw_path = event.get("rawPath", "")
+    route_key = event.get("routeKey", "")
+    http_method = event.get("requestContext", {}).get("http", {}).get("method", "")
+
+    # Determine HTTP method
+    if "GET" in route_key:
+        http_method = "GET"
+    elif "POST" in route_key:
+        http_method = "POST"
+
+    # Parse path parameters
+    path_parts = [p for p in raw_path.split("/") if p and p != "prompts"]
+    query_params = event.get("queryStringParameters") or {}
+
+    try:
+        if http_method == "GET":
+            if len(path_parts) == 0:
+                # GET /prompts - list all prompt names (or all versions if ?all=true)
+                if query_params.get("all") == "true":
+                    return {
+                        "statusCode": 200,
+                        "body": json.dumps({"prompts": list_prompts()})
+                    }
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps({"prompts": get_prompt_names()})
+                }
+
+            elif len(path_parts) == 1:
+                # GET /prompts/{name} - get latest version
+                name = path_parts[0]
+                content = get_prompt(name)
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps({"name": name, "content": content})
+                }
+
+            elif len(path_parts) == 2:
+                # GET /prompts/{name}/{version}
+                name = path_parts[0]
+                version = int(path_parts[1])
+                content = get_prompt(name, version)
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps({
+                        "name": name,
+                        "version": version,
+                        "content": content
+                    })
+                }
+
+        elif http_method == "POST":
+            # Parse body
+            if "body" in event and isinstance(event["body"], str):
+                body = json.loads(event["body"])
+            else:
+                body = event.get("body", {})
+
+            name = body.get("name")
+            content = body.get("content")
+
+            if not name or not content:
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps({"error": "Missing required fields: name, content"})
+                }
+
+            # Try to push (if name exists) or create (if name doesn't exist)
+            try:
+                result = push_prompt(name, content)
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps({
+                        "action": "pushed",
+                        **result
+                    })
+                }
+            except ValueError as e:
+                if "doesn't exist" in str(e):
+                    # Name doesn't exist, create new line
+                    result = create_prompt_line(name, content)
+                    return {
+                        "statusCode": 201,
+                        "body": json.dumps({
+                            "action": "created",
+                            **result
+                        })
+                    }
+                raise
+
+        return {
+            "statusCode": 405,
+            "body": json.dumps({"error": f"Method not allowed: {http_method}"})
+        }
+
+    except FileNotFoundError as e:
+        return {
+            "statusCode": 404,
+            "body": json.dumps({"error": str(e)})
+        }
+    except ValueError as e:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": str(e)})
+        }
 
 
 # ============================================================================

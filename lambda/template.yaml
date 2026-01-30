@@ -91,6 +91,31 @@ Resources:
           Properties:
             Path: /models
             Method: GET
+        # Prompts endpoints - versioned prompt management
+        PromptsListApi:
+          Type: HttpApi
+          Condition: CreateApiGateway
+          Properties:
+            Path: /prompts
+            Method: GET
+        PromptsCreateApi:
+          Type: HttpApi
+          Condition: CreateApiGateway
+          Properties:
+            Path: /prompts
+            Method: POST
+        PromptsGetByNameApi:
+          Type: HttpApi
+          Condition: CreateApiGateway
+          Properties:
+            Path: /prompts/{name}
+            Method: GET
+        PromptsGetByVersionApi:
+          Type: HttpApi
+          Condition: CreateApiGateway
+          Properties:
+            Path: /prompts/{name}/{version}
+            Method: GET
     Metadata:
       Dockerfile: lambda/Dockerfile
       DockerContext: ..

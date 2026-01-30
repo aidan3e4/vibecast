@@ -6,6 +6,10 @@ from enum import Enum
 class OpenAIModel(str, Enum):
     """Available OpenAI models for vision analysis."""
 
+    # GPT-5 family
+    GPT_5_2 = "gpt-5.2"
+    GPT_5_2_PRO = "gpt-5.2-pro"
+
     # GPT-4o family
     GPT_4O = "gpt-4o"
     GPT_4O_MINI = "gpt-4o-mini"
@@ -20,8 +24,16 @@ class OpenAIModel(str, Enum):
     def list_models(cls) -> list[dict]:
         """Return all available models with metadata for API consumers."""
         metadata = {
+            cls.GPT_5_2: {
+                "description": "Complex reasoning, broad world knowledge, and code-heavy or multi-step agentic tasks",
+                "tier": "standard",
+            },
+            cls.GPT_5_2_PRO: {
+                "description": "Tough problems that may take longer to solve but require harder thinking",
+                "tier": "premium",
+            },
             cls.GPT_4O: {
-                "description": "Most capable GPT-4o model, best for complex analysis",
+                "description": "Capable GPT-4o model for vision analysis",
                 "tier": "standard",
             },
             cls.GPT_4O_MINI: {
