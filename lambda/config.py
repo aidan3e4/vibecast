@@ -1,10 +1,11 @@
 """Configuration for the Lambda function."""
+
 import json
 import os
 from functools import lru_cache
 
 from vision_llm import get_default_prompt
-from vision_llm.models import DEFAULT_MODEL, get_provider_for_model, Provider
+from vision_llm.models import DEFAULT_MODEL, Provider, get_provider_for_model
 
 
 @lru_cache(maxsize=1)

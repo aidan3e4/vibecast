@@ -12,4 +12,5 @@ Engineering:
     - makefile should be at root
     - split llm and vision
     - etc
+- add tests
 

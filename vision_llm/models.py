@@ -6,6 +6,7 @@ from enum import Enum
 
 class Provider(str, Enum):
     """Supported LLM providers."""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
@@ -15,6 +16,7 @@ class Provider(str, Enum):
 @dataclass
 class ModelInfo:
     """Model metadata."""
+
     id: str  # litellm model identifier
     name: str
     provider: Provider
@@ -119,6 +121,7 @@ def get_provider_for_model(model_id: str) -> Provider | None:
 # Backwards compatibility - keep OpenAIModel for existing code
 class OpenAIModel(str, Enum):
     """Available OpenAI models for vision analysis (deprecated - use MODELS dict)."""
+
     GPT_4O = "gpt-4o"
     GPT_4O_MINI = "gpt-4o-mini"
     GPT_4_TURBO = "gpt-4-turbo"

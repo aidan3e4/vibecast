@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """CLI for invoking the deployed Lambda remotely."""
+
 import argparse
 import json
 import sys
@@ -22,7 +23,8 @@ Examples:
         help="S3 URI of the fisheye image",
     )
     parser.add_argument(
-        "--views", nargs="+",
+        "--views",
+        nargs="+",
         help="Views to analyze with LLM (N, S, E, W, B)",
     )
     parser.add_argument(

@@ -6,7 +6,7 @@ Functions for analyzing images using multiple LLM providers via litellm.
 
 import json
 
-from llm_inference.llm.inference import llm_turn, ModelConfig, InferenceConfig
+from llm_inference.llm.inference import InferenceConfig, ModelConfig, llm_turn
 
 from .models import DEFAULT_MODEL
 
@@ -37,10 +37,7 @@ async def analyze_image(
             "role": "user",
             "content": [
                 {"type": "text", "text": prompt},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-                },
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}},
             ],
         }
     ]

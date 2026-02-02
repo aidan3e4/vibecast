@@ -1,10 +1,12 @@
 """AWS Lambda handler for fisheye image processing."""
+
 import json
 import logging
 import traceback
 from typing import Any
 
 from processor import process_image
+
 from vision_llm import (
     create_prompt_line,
     get_prompt,
@@ -85,10 +87,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # Extract parameters from event
         input_s3_uri = params.get("input_s3_uri")
         if not input_s3_uri:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({"error": "Missing required parameter: input_s3_uri"})
-            }
+            return {"statusCode": 400, "body": json.dumps({"error": "Missing required parameter: input_s3_uri"})}
 
         unwarp = params.get("unwarp", False)
         analyze = params.get("analyze", False)
@@ -97,9 +96,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         if not unwarp and not analyze:
             return {
                 "statusCode": 400,
-                "body": json.dumps({
-                    "error": "At least one operation must be specified: unwarp=true or analyze=true"
-                })
+                "body": json.dumps({"error": "At least one operation must be specified: unwarp=true or analyze=true"}),
             }
 
         views_to_analyze = params.get("views_to_analyze")
@@ -126,24 +123,15 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         logger.info(f"Processing complete. Results: {result['results_uri']}")
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps(result)
-        }
+        return {"statusCode": 200, "body": json.dumps(result)}
 
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"error": str(e)})
-        }
+        return {"statusCode": 400, "body": json.dumps({"error": str(e)})}
 
     except Exception as e:
         logger.error(f"Processing error: {str(e)}\n{traceback.format_exc()}")
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": f"Internal error: {str(e)}"})
-        }
+        return {"statusCode": 500, "body": json.dumps({"error": f"Internal error: {str(e)}"})}
 
 
 def s3_trigger_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
@@ -172,10 +160,7 @@ def s3_trigger_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         result = lambda_handler(standard_event, context)
         results.append(result)
 
-    return {
-        "statusCode": 200,
-        "body": {"processed": len(results), "results": results}
-    }
+    return {"statusCode": 200, "body": {"processed": len(results), "results": results}}
 
 
 def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
@@ -199,10 +184,12 @@ def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     return {
         "statusCode": 200,
-        "body": json.dumps({
-            "models": list_models(),
-            "default": str(DEFAULT_MODEL),
-        })
+        "body": json.dumps(
+            {
+                "models": list_models(),
+                "default": str(DEFAULT_MODEL),
+            }
+        ),
     }
 
 
@@ -247,37 +234,21 @@ def prompts_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             if len(path_parts) == 0:
                 # GET /prompts - list all prompt names (or all versions if ?all=true)
                 if query_params.get("all") == "true":
-                    return {
-                        "statusCode": 200,
-                        "body": json.dumps({"prompts": list_prompts()})
-                    }
-                return {
-                    "statusCode": 200,
-                    "body": json.dumps({"prompts": get_prompt_names()})
-                }
+                    return {"statusCode": 200, "body": json.dumps({"prompts": list_prompts()})}
+                return {"statusCode": 200, "body": json.dumps({"prompts": get_prompt_names()})}
 
             elif len(path_parts) == 1:
                 # GET /prompts/{name} - get latest version
                 name = path_parts[0]
                 content = get_prompt(name)
-                return {
-                    "statusCode": 200,
-                    "body": json.dumps({"name": name, "content": content})
-                }
+                return {"statusCode": 200, "body": json.dumps({"name": name, "content": content})}
 
             elif len(path_parts) == 2:
                 # GET /prompts/{name}/{version}
                 name = path_parts[0]
                 version = int(path_parts[1])
                 content = get_prompt(name, version)
-                return {
-                    "statusCode": 200,
-                    "body": json.dumps({
-                        "name": name,
-                        "version": version,
-                        "content": content
-                    })
-                }
+                return {"statusCode": 200, "body": json.dumps({"name": name, "version": version, "content": content})}
 
         elif http_method == "POST":
             # Parse body
@@ -290,49 +261,25 @@ def prompts_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             content = body.get("content")
 
             if not name or not content:
-                return {
-                    "statusCode": 400,
-                    "body": json.dumps({"error": "Missing required fields: name, content"})
-                }
+                return {"statusCode": 400, "body": json.dumps({"error": "Missing required fields: name, content"})}
 
             # Try to push (if name exists) or create (if name doesn't exist)
             try:
                 result = push_prompt(name, content)
-                return {
-                    "statusCode": 200,
-                    "body": json.dumps({
-                        "action": "pushed",
-                        **result
-                    })
-                }
+                return {"statusCode": 200, "body": json.dumps({"action": "pushed", **result})}
             except ValueError as e:
                 if "doesn't exist" in str(e):
                     # Name doesn't exist, create new line
                     result = create_prompt_line(name, content)
-                    return {
-                        "statusCode": 201,
-                        "body": json.dumps({
-                            "action": "created",
-                            **result
-                        })
-                    }
+                    return {"statusCode": 201, "body": json.dumps({"action": "created", **result})}
                 raise
 
-        return {
-            "statusCode": 405,
-            "body": json.dumps({"error": f"Method not allowed: {http_method}"})
-        }
+        return {"statusCode": 405, "body": json.dumps({"error": f"Method not allowed: {http_method}"})}
 
     except FileNotFoundError as e:
-        return {
-            "statusCode": 404,
-            "body": json.dumps({"error": str(e)})
-        }
+        return {"statusCode": 404, "body": json.dumps({"error": str(e)})}
     except ValueError as e:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"error": str(e)})
-        }
+        return {"statusCode": 400, "body": json.dumps({"error": str(e)})}
 
 
 # ============================================================================
@@ -382,7 +329,8 @@ Examples:
         help="Analyze image(s) with LLM",
     )
     parser.add_argument(
-        "--views", nargs="+",
+        "--views",
+        nargs="+",
         help="Views to analyze (N, S, E, W, B) - only for unwarp+analyze mode",
     )
     parser.add_argument(
@@ -438,6 +386,7 @@ Examples:
 
     if args.remote:
         import boto3
+
         print(f"Invoking Lambda: {args.function_name}")
         client = boto3.client("lambda")
         response = client.invoke(

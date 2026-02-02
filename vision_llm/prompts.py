@@ -24,6 +24,7 @@ S3_PROMPTS_PREFIX = "prompts/"
 def _get_s3_client():
     """Get boto3 S3 client (lazy import to avoid issues in local dev)."""
     import boto3
+
     return boto3.client("s3")
 
 
@@ -115,12 +116,14 @@ def list_prompts() -> list[dict]:
         versions.sort()
         max_version = max(versions)
         for v in versions:
-            result.append({
-                "name": name,
-                "version": v,
-                "latest": v == max_version,
-                "source": "s3",
-            })
+            result.append(
+                {
+                    "name": name,
+                    "version": v,
+                    "latest": v == max_version,
+                    "source": "s3",
+                }
+            )
 
     # Add local prompts that aren't in S3
     for name, versions in sorted(local_prompts.items()):
@@ -129,12 +132,14 @@ def list_prompts() -> list[dict]:
         versions.sort()
         max_version = max(versions)
         for v in versions:
-            result.append({
-                "name": name,
-                "version": v,
-                "latest": v == max_version,
-                "source": "local",
-            })
+            result.append(
+                {
+                    "name": name,
+                    "version": v,
+                    "latest": v == max_version,
+                    "source": "local",
+                }
+            )
 
     return result
 
@@ -151,11 +156,13 @@ def get_prompt_names() -> list[dict]:
 
     result = []
     for name, versions in sorted(merged.items()):
-        result.append({
-            "name": name,
-            "latest_version": max(versions),
-            "version_count": len(versions),
-        })
+        result.append(
+            {
+                "name": name,
+                "latest_version": max(versions),
+                "version_count": len(versions),
+            }
+        )
 
     return result
 
@@ -268,9 +275,7 @@ def push_prompt(name: str, content: str) -> dict:
     merged = _merge_prompts(s3_prompts, local_prompts)
 
     if name not in merged:
-        raise ValueError(
-            f"Prompt name '{name}' doesn't exist. Use create_prompt_line to create a new prompt."
-        )
+        raise ValueError(f"Prompt name '{name}' doesn't exist. Use create_prompt_line to create a new prompt.")
 
     previous_version = max(merged[name])
     new_version = previous_version + 1

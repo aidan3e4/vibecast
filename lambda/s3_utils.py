@@ -1,4 +1,5 @@
 """S3 utilities for reading and writing images and results."""
+
 import json
 from typing import Any
 
@@ -25,12 +26,7 @@ def download_image_from_s3(bucket: str, key: str) -> np.ndarray:
     return img_rgb
 
 
-def upload_image_to_s3(
-    img_rgb: np.ndarray,
-    bucket: str,
-    key: str,
-    quality: int = 90
-) -> str:
+def upload_image_to_s3(img_rgb: np.ndarray, bucket: str, key: str, quality: int = 90) -> str:
     """Upload a numpy array (RGB) as JPEG to S3. Returns the S3 URI."""
     # Convert RGB to BGR for OpenCV
     img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
@@ -42,30 +38,16 @@ def upload_image_to_s3(
         raise ValueError("Failed to encode image to JPEG")
 
     # Upload to S3
-    s3_client.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=encoded.tobytes(),
-        ContentType="image/jpeg"
-    )
+    s3_client.put_object(Bucket=bucket, Key=key, Body=encoded.tobytes(), ContentType="image/jpeg")
 
     return f"s3://{bucket}/{key}"
 
 
-def upload_json_to_s3(
-    data: dict[str, Any],
-    bucket: str,
-    key: str
-) -> str:
+def upload_json_to_s3(data: dict[str, Any], bucket: str, key: str) -> str:
     """Upload a JSON object to S3. Returns the S3 URI."""
     json_bytes = json.dumps(data, indent=2, default=str).encode("utf-8")
 
-    s3_client.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=json_bytes,
-        ContentType="application/json"
-    )
+    s3_client.put_object(Bucket=bucket, Key=key, Body=json_bytes, ContentType="application/json")
 
     return f"s3://{bucket}/{key}"
 

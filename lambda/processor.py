@@ -1,4 +1,5 @@
 """Image processing logic - unwarp fisheye and analyze with LLM."""
+
 import asyncio
 import sys
 from datetime import datetime
@@ -99,9 +100,7 @@ async def process_image_async(
 
     # Normalize and validate view names
     if views_to_analyze:
-        views_to_analyze = [
-            Config.VIEW_SHORTCUTS.get(v.upper(), v) for v in views_to_analyze
-        ]
+        views_to_analyze = [Config.VIEW_SHORTCUTS.get(v.upper(), v) for v in views_to_analyze]
         # Validate views
         invalid = set(views_to_analyze) - set(Config.VALID_VIEWS)
         if invalid:

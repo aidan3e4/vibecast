@@ -38,19 +38,11 @@ def create_perspective_map(fisheye_shape, output_size, fov, theta, phi):
     cos_t, sin_t = np.cos(theta_rad), np.sin(theta_rad)
     cos_p, sin_p = np.cos(phi_rad), np.sin(phi_rad)
 
-    Ry = np.array([
-        [cos_t, 0, sin_t],
-        [0, 1, 0],
-        [-sin_t, 0, cos_t]
-    ])
-    Rx = np.array([
-        [1, 0, 0],
-        [0, cos_p, -sin_p],
-        [0, sin_p, cos_p]
-    ])
+    Ry = np.array([[cos_t, 0, sin_t], [0, 1, 0], [-sin_t, 0, cos_t]])
+    Rx = np.array([[1, 0, 0], [0, cos_p, -sin_p], [0, sin_p, cos_p]])
     R = Ry @ Rx
 
-    rays_rotated = np.einsum('ij,hwj->hwi', R, rays)
+    rays_rotated = np.einsum("ij,hwj->hwi", R, rays)
 
     rx, ry, rz = rays_rotated[..., 0], rays_rotated[..., 1], rays_rotated[..., 2]
 
@@ -102,16 +94,18 @@ def extract_center_view(img, radius_fraction=0.6, output_size=(600, 600)):
 def get_room_views(img, fov=90, output_size=(1080, 810), view_angle=45, below_fraction=0.6):
     """Generate perspective views from fisheye image."""
     directions = {
-        'North': (0, view_angle),
-        'East': (90, view_angle),
-        'South': (180, view_angle),
-        'West': (270, view_angle),
+        "North": (0, view_angle),
+        "East": (90, view_angle),
+        "South": (180, view_angle),
+        "West": (270, view_angle),
     }
 
     views = {}
     for name, (theta, phi) in directions.items():
         views[name] = fisheye_to_perspective_fast(img, fov=fov, theta=theta, phi=phi, output_size=output_size)
 
-    views['Below'] = extract_center_view(img, radius_fraction=below_fraction, output_size=(output_size[0], output_size[0]))
+    views["Below"] = extract_center_view(
+        img, radius_fraction=below_fraction, output_size=(output_size[0], output_size[0])
+    )
 
     return views
