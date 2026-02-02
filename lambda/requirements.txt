@@ -1,6 +1,0 @@
-# Lambda dependencies
-# boto3 is provided by Lambda runtime, don't include it
-opencv-python-headless>=4.9.0
-numpy>=1.26.0,<2.3.0
-openai>=1.12.0
-pillow>=10.2.0

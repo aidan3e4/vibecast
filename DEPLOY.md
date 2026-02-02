@@ -11,3 +11,5 @@ This requires AWS login, which can be done with sso by
 
 
 Some other settings such as bucket names are passed through samconfig.toml.
+
+The llm-inference package is installed from the main branch in github. To refresh it locally (and thus in the lambda since the lambda uses uv.lock) do a `make update-deps` in the lambda dir

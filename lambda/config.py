@@ -3,7 +3,8 @@ import json
 import os
 from functools import lru_cache
 
-from vision_llm import OpenAIModel, get_default_prompt
+from vision_llm import get_default_prompt
+from vision_llm.models import DEFAULT_MODEL, get_provider_for_model, Provider
 
 
 @lru_cache(maxsize=1)
@@ -23,19 +24,54 @@ def _get_secret(secret_name: str, region: str = None) -> dict:
         return {}
 
 
-def _get_openai_key() -> str:
-    """Get OpenAI API key from env var or Secrets Manager."""
+def _get_api_key(env_var: str, secret_key: str, secret_name_env: str = None) -> str:
+    """Get API key from env var or Secrets Manager."""
     # First check env var (for local dev or direct injection)
-    key = os.environ.get("OPENAI_API_KEY", "")
+    key = os.environ.get(env_var, "")
     if key:
         return key
 
     # Fall back to Secrets Manager
-    secret_name = os.environ.get("OPENAI_SECRET_NAME", "")
+    secret_name_env = secret_name_env or f"{env_var.replace('_API_KEY', '')}_SECRET_NAME"
+    secret_name = os.environ.get(secret_name_env, "")
     if secret_name:
         secrets = _get_secret(secret_name)
-        return secrets.get("OPENAI_API_KEY", "")
+        return secrets.get(secret_key, "")
 
+    return ""
+
+
+def _get_openai_key() -> str:
+    """Get OpenAI API key from env var or Secrets Manager."""
+    return _get_api_key("OPENAI_API_KEY", "OPENAI_API_KEY", "OPENAI_SECRET_NAME")
+
+
+def _get_anthropic_key() -> str:
+    """Get Anthropic API key from env var or Secrets Manager."""
+    return _get_api_key("ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_SECRET_NAME")
+
+
+def _get_google_key() -> str:
+    """Get Google API key from env var or Secrets Manager."""
+    return _get_api_key("GOOGLE_API_KEY", "GOOGLE_API_KEY", "GOOGLE_SECRET_NAME")
+
+
+def _get_novita_key() -> str:
+    """Get Novita API key from env var or Secrets Manager."""
+    return _get_api_key("NOVITA_API_KEY", "NOVITA_API_KEY", "NOVITA_SECRET_NAME")
+
+
+def get_api_key_for_model(model_id: str) -> str:
+    """Get the appropriate API key for a given model."""
+    provider = get_provider_for_model(model_id)
+    if provider == Provider.OPENAI:
+        return _get_openai_key()
+    elif provider == Provider.ANTHROPIC:
+        return _get_anthropic_key()
+    elif provider == Provider.GOOGLE:
+        return _get_google_key()
+    elif provider == Provider.NOVITA:
+        return _get_novita_key()
     return ""
 
 
@@ -53,7 +89,7 @@ class Config:
     DEFAULT_BELOW_FRACTION = 0.6
 
     # LLM - fetched lazily to support Secrets Manager
-    DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL") or OpenAIModel.GPT_4O
+    DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL") or DEFAULT_MODEL
 
     @property
     def openai_api_key(self) -> str:
@@ -61,6 +97,11 @@ class Config:
 
     # Class-level access (backwards compatible)
     OPENAI_API_KEY = property(lambda self: _get_openai_key())
+
+    @staticmethod
+    def get_api_key_for_model(model_id: str) -> str:
+        """Get the appropriate API key for a model."""
+        return get_api_key_for_model(model_id)
 
     # Load default prompt from versioned prompts directory
     try:

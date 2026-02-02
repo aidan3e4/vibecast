@@ -1,4 +1,8 @@
-.PHONY: build invoke-local test-mock test-local deploy clean
+.PHONY: build invoke-local test-mock test-local deploy clean update-deps
+
+# Update dependencies (including git dependency llm-inference)
+update-deps:
+	cd .. && uv lock --upgrade-package llm-inference && uv sync
 
 # Build the Lambda container image
 build:
@@ -50,6 +54,7 @@ clean:
 # Show help
 help:
 	@echo "Available targets:"
+	@echo "  update-deps          - Update dependencies (including git deps)"
 	@echo "  build                - Build the Lambda package"
 	@echo "  invoke-local         - Run Lambda locally with SAM (Docker required)"
 	@echo "  invoke-local-analyze - Run with LLM analysis via SAM"

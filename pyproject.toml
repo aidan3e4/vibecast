@@ -9,19 +9,21 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.42.35",
     "dotenv>=0.9.9",
-    "openai>=2.15.0",
+    "llm-inference @ git+https://github.com/aidan3e4/llm-inference.git@main",
     "opencv-python-headless>=4.13.0.90",
     "pillow>=12.1.0",
     "requests>=2.32.3",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
+    "aws-sam-cli>=1.148.0",
+    "boto3>=1.42.35",
     "ipykernel>=7.1.0",
     "pytest>=8.0.0",
-    "ruff>=0.4.0",
+    "flake8>=7.3.0",
+    "ruff>=0.14.13",
 ]
 
 [tool.setuptools.packages.find]
@@ -35,9 +37,4 @@ target-version = "py312"
 select = ["E", "F", "I"]
 ignore = ["E501"]
 
-[dependency-groups]
-dev = [
-    "flake8>=7.3.0",
-    "ipykernel>=7.1.0",
-    "ruff>=0.14.13",
-]
+

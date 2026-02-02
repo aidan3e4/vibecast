@@ -31,6 +31,11 @@ Parameters:
     Default: ""
     Description: Secrets Manager secret name containing OPENAI_API_KEY
 
+  NovitaSecretName:
+    Type: String
+    Default: ""
+    Description: Secrets Manager secret name containing NOVITA_API_KEY
+
   EnableApiGateway:
     Type: String
     Default: "false"
@@ -62,6 +67,7 @@ Resources:
           RESULTS_BUCKET: !Ref ResultsBucket
           OPENAI_API_KEY: !Ref OpenAIApiKey
           OPENAI_SECRET_NAME: !Ref OpenAISecretName
+          NOVITA_SECRET_NAME: !Ref NovitaSecretName
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref InputBucket

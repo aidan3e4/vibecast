@@ -1,4 +1,5 @@
 """Image processing logic - unwarp fisheye and analyze with LLM."""
+import asyncio
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import Any
 # Add parent directory to path to import vision_llm
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import Config, _get_openai_key
+from config import Config
 from s3_utils import (
     download_image_from_s3,
     generate_output_prefix,
@@ -16,7 +17,7 @@ from s3_utils import (
     upload_json_to_s3,
 )
 
-from vision_llm import analyze_with_openai, get_room_views, image_to_base64
+from vision_llm import analyze_image, get_room_views, image_to_base64
 
 
 def unwarp_fisheye_image(
@@ -48,7 +49,7 @@ def unwarp_fisheye_image(
     return views
 
 
-def process_image(
+async def process_image_async(
     input_s3_uri: str,
     unwarp: bool = False,
     analyze: bool = False,
@@ -71,7 +72,7 @@ def process_image(
                          Only used when unwarp=True and analyze=True
                          If None when both flags are set, all views are analyzed
         prompt: Custom prompt for LLM analysis
-        model: OpenAI model to use for analysis (defaults to config)
+        model: LLM model to use for analysis (defaults to config)
         output_bucket: Bucket for unwarped images (defaults to config)
         results_bucket: Bucket for analysis results (defaults to config)
         fov: Field of view in degrees (for unwarping)
@@ -136,11 +137,10 @@ def process_image(
 
         # Analyze the single input image
         img_base64 = image_to_base64(input_img)
-        result = analyze_with_openai(
+        result = await analyze_image(
             img_base64,
             prompt,
-            _get_openai_key(),
-            model,
+            model=model,
         )
         analysis_results["Image"] = result
 
@@ -171,11 +171,10 @@ def process_image(
         for direction in analyze_views:
             if direction in views:
                 img_base64 = image_to_base64(views[direction])
-                result = analyze_with_openai(
+                result = await analyze_image(
                     img_base64,
                     prompt,
-                    _get_openai_key(),
-                    model,
+                    model=model,
                 )
                 analysis_results[direction] = result
 
@@ -208,3 +207,32 @@ def process_image(
     results["results_uri"] = results_uri
 
     return results
+
+
+def process_image(
+    input_s3_uri: str,
+    unwarp: bool = False,
+    analyze: bool = False,
+    views_to_analyze: list[str] = None,
+    prompt: str = None,
+    model: str = None,
+    output_bucket: str = None,
+    results_bucket: str = None,
+    fov: int = None,
+    view_angle: int = None,
+) -> dict[str, Any]:
+    """Sync wrapper for process_image_async."""
+    return asyncio.run(
+        process_image_async(
+            input_s3_uri=input_s3_uri,
+            unwarp=unwarp,
+            analyze=analyze,
+            views_to_analyze=views_to_analyze,
+            prompt=prompt,
+            model=model,
+            output_bucket=output_bucket,
+            results_bucket=results_bucket,
+            fov=fov,
+            view_angle=view_angle,
+        )
+    )

@@ -6,10 +6,10 @@ from typing import Any
 
 from processor import process_image
 from vision_llm import (
-    OpenAIModel,
     create_prompt_line,
     get_prompt,
     get_prompt_names,
+    list_models,
     list_prompts,
     push_prompt,
 )
@@ -200,7 +200,7 @@ def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     return {
         "statusCode": 200,
         "body": json.dumps({
-            "models": OpenAIModel.list_models(),
+            "models": list_models(),
             "default": str(DEFAULT_MODEL),
         })
     }
