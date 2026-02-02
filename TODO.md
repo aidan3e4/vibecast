@@ -5,7 +5,11 @@ Product:
 Deployment:
 
 Engineering:
-- split vision_llm into a CV part and an LLM part
 - before unwarping should check if the unwarped does not already exists (unwarping is fast though)
 - add telemetry and logs (for ex profiling the lambda)
+- restructure the Lambda repo better
+    - annoying to copy llm_vision in there
+    - makefile should be at root
+    - split llm and vision
+    - etc
 

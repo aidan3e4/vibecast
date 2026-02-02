@@ -1424,7 +1424,7 @@ wheels = [
 [[package]]
 name = "llm-inference"
 version = "0.0.0"
-source = { git = "https://github.com/aidan3e4/llm-inference.git?rev=main#6c4a93c1c2851c590b89cdd4d505439bfb3dd3c8" }
+source = { git = "https://github.com/aidan3e4/llm-inference.git?rev=main#4bfbc175d8e5f1ad4c5df5caf81fd75d622e600f" }
 dependencies = [
     { name = "ddgs" },
     { name = "dotenv" },
