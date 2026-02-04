@@ -5,8 +5,6 @@ import logging
 import traceback
 from typing import Any
 
-from vibecast.processor import process_image
-
 from vibecast import (
     create_prompt_line,
     get_prompt,
@@ -15,6 +13,7 @@ from vibecast import (
     list_prompts,
     push_prompt,
 )
+from vibecast.processor import process_image
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
