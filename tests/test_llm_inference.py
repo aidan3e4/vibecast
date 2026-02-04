@@ -2,7 +2,7 @@ import asyncio
 import base64
 from pathlib import Path
 
-from vision_llm import analyze_image
+from vibecast import analyze_image
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

@@ -5,9 +5,9 @@ import logging
 import traceback
 from typing import Any
 
-from processor import process_image
+from vibecast.processor import process_image
 
-from vision_llm import (
+from vibecast import (
     create_prompt_line,
     get_prompt,
     get_prompt_names,
@@ -180,7 +180,7 @@ def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         }
     }
     """
-    from vision_llm import DEFAULT_MODEL
+    from vibecast import DEFAULT_MODEL
 
     return {
         "statusCode": 200,

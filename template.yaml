@@ -123,8 +123,8 @@ Resources:
             Path: /prompts/{name}/{version}
             Method: GET
     Metadata:
-      Dockerfile: lambda/Dockerfile
-      DockerContext: ..
+      Dockerfile: Dockerfile
+      DockerContext: .
       DockerTag: latest
 
 Outputs:

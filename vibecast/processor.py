@@ -1,16 +1,11 @@
 """Image processing logic - unwarp fisheye and analyze with LLM."""
 
 import asyncio
-import sys
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
-# Add parent directory to path to import vision_llm
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from config import Config
-from s3_utils import (
+from vibecast.config import Config
+from vibecast.s3_utils import (
     download_image_from_s3,
     generate_output_prefix,
     parse_s3_uri,
@@ -18,7 +13,7 @@ from s3_utils import (
     upload_json_to_s3,
 )
 
-from vision_llm import analyze_image, get_room_views, image_to_base64
+from vibecast import analyze_image, get_room_views, image_to_base64
 
 
 def unwarp_fisheye_image(

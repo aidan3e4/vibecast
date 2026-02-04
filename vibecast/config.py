@@ -4,8 +4,8 @@ import json
 import os
 from functools import lru_cache
 
-from vision_llm import get_default_prompt
-from vision_llm.models import DEFAULT_MODEL, Provider, get_provider_for_model
+from vibecast import get_default_prompt
+from vibecast.models import DEFAULT_MODEL, Provider, get_provider_for_model
 
 
 @lru_cache(maxsize=1)
