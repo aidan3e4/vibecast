@@ -2,8 +2,35 @@
 
 import json
 import logging
+import os
 import traceback
 from typing import Any
+
+# IMPORTANT: Load secrets from AWS Secrets Manager and set as environment variables
+# This must happen BEFORE any litellm imports (which happen in vibecast modules)
+from vibecast.config import _get_anthropic_key, _get_google_key, _get_novita_key, _get_openai_key
+
+# Pre-load API keys from Secrets Manager into environment variables
+# litellm reads directly from environment variables, not our config functions
+if not os.environ.get("OPENAI_API_KEY"):
+    openai_key = _get_openai_key()
+    if openai_key:
+        os.environ["OPENAI_API_KEY"] = openai_key
+
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    anthropic_key = _get_anthropic_key()
+    if anthropic_key:
+        os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+
+if not os.environ.get("GOOGLE_API_KEY"):
+    google_key = _get_google_key()
+    if google_key:
+        os.environ["GOOGLE_API_KEY"] = google_key
+
+if not os.environ.get("NOVITA_API_KEY"):
+    novita_key = _get_novita_key()
+    if novita_key:
+        os.environ["NOVITA_API_KEY"] = novita_key
 
 from vibecast import (
     create_prompt_line,
