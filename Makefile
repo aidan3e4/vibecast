@@ -2,13 +2,11 @@
 
 # Update dependencies (including git dependency llm-inference)
 update-deps:
-	cd .. && uv lock --upgrade-package llm-inference && uv sync
+	uv lock --upgrade-package llm-inference && uv sync
 
 # Build the Lambda container image
 build:
-	cp -r ../vision_llm ./vision_llm
 	sam build --debug
-	rm -rf ./vision_llm
 
 # Run Lambda locally with SAM (requires Docker)
 invoke-local: build
@@ -49,7 +47,7 @@ deploy-guided: build
 
 # Clean build artifacts
 clean:
-	rm -rf .aws-sam ./vision_llm __pycache__ */__pycache__
+	rm -rf .aws-sam __pycache__ */__pycache__
 
 # Show help
 help:

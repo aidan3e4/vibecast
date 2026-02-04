@@ -1,1 +1,0 @@
-# Lambda image processing service
