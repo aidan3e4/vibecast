@@ -43,7 +43,7 @@ async def analyze_image(
     ]
 
     model_config = ModelConfig(model_name=model)
-    inference_config = InferenceConfig(max_turns_llm_consecutive=1, max_turns_session=1)
+    inference_config = InferenceConfig(max_turns_llm_consecutive=1, max_turns_session=5)
 
     content = await llm_turn(
         messages=messages,
