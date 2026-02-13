@@ -4,6 +4,8 @@ import asyncio
 from datetime import datetime
 from typing import Any
 
+import cv2
+
 from vibecast import analyze_image, get_room_views, image_to_base64
 from vibecast.config import Config
 from vibecast.s3_utils import (
@@ -42,6 +44,26 @@ def unwarp_fisheye_image(
     )
 
     return views
+
+
+def rotate_image(img_rgb, angle: int):
+    """Rotate an image by the given angle (90, 180, or 270 degrees clockwise).
+
+    Args:
+        img_rgb: Numpy array (RGB) of the image
+        angle: Rotation angle in degrees. Must be 90, 180, or 270.
+
+    Returns:
+        Rotated numpy array (RGB)
+    """
+    rotation_map = {
+        90: cv2.ROTATE_90_CLOCKWISE,
+        180: cv2.ROTATE_180,
+        270: cv2.ROTATE_90_COUNTERCLOCKWISE,
+    }
+    if angle not in rotation_map:
+        raise ValueError(f"Invalid rotation angle: {angle}. Must be 90, 180, or 270.")
+    return cv2.rotate(img_rgb, rotation_map[angle])
 
 
 async def process_image_async(
