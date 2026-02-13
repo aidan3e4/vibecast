@@ -54,6 +54,8 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         "input_s3_uri": "s3://bucket/path/to/image.jpg",    # Required
         "unwarp": true,                                      # Perform fisheye unwarping
         "analyze": true,                                     # Perform LLM analysis
+        "rotate": true,                                      # Rotate the image
+        "rotation_angle": 15,                                # Rotation angle in degrees (required if rotate=true)
         "views_to_analyze": ["N", "S", "E", "W", "B"],      # Which views to analyze (unwarp mode only)
         "prompt": "Custom analysis prompt...",              # Optional
         "model": "gpt-4o",                                  # Optional, OpenAI model
@@ -76,6 +78,10 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
        - Input: fisheye image
        - Output: 5 unwarped views + LLM analysis of specified views
 
+    4. Rotate: rotate=true, rotation_angle=<degrees>
+       - Input: already unwarped image
+       - Output: Rotated image saved with _rotated suffix at same location
+
     Returns:
     {
         "statusCode": 200,
@@ -83,6 +89,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "input_uri": "s3://...",
             "unwarped_images": {...},        # Only if unwarp=true
             "analysis_results": {...},       # Only if analyze=true
+            "rotated_image": "s3://...",     # Only if rotate=true
             "results_uri": "s3://...",
             "processed_at": "2026-01-27T14:30:52Z"
         }
@@ -117,12 +124,16 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         unwarp = params.get("unwarp", False)
         analyze = params.get("analyze", False)
+        rotate = params.get("rotate", False)
+        rotation_angle = params.get("rotation_angle")
 
         # Validate: at least one operation must be specified
-        if not unwarp and not analyze:
+        if not unwarp and not analyze and not rotate:
             return {
                 "statusCode": 400,
-                "body": json.dumps({"error": "At least one operation must be specified: unwarp=true or analyze=true"}),
+                "body": json.dumps(
+                    {"error": "At least one operation must be specified: unwarp=true, analyze=true, or rotate=true"}
+                ),
             }
 
         views_to_analyze = params.get("views_to_analyze")
@@ -138,6 +149,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             input_s3_uri=input_s3_uri,
             unwarp=unwarp,
             analyze=analyze,
+            rotate=rotate,
             views_to_analyze=views_to_analyze,
             prompt=prompt,
             model=model,
@@ -145,6 +157,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             results_bucket=results_bucket,
             fov=fov,
             view_angle=view_angle,
+            rotation_angle=rotation_angle,
         )
 
         logger.info(f"Processing complete. Results: {result['results_uri']}")
@@ -336,6 +349,9 @@ Examples:
   # Unwarp + analyze all views
   python handler.py s3://bucket/fisheye.jpg --unwarp --analyze
 
+  # Rotate an image by 15 degrees
+  python handler.py s3://bucket/image.jpg --rotate --rotation-angle 15
+
   # Invoke deployed Lambda instead of running locally
   python handler.py s3://bucket/image.jpg --unwarp --analyze --remote
         """,
@@ -378,6 +394,16 @@ Examples:
         help="Elevation angle for cardinal directions (for unwarp)",
     )
     parser.add_argument(
+        "--rotate",
+        action="store_true",
+        help="Rotate the image by the specified angle",
+    )
+    parser.add_argument(
+        "--rotation-angle",
+        type=float,
+        help="Rotation angle in degrees clockwise",
+    )
+    parser.add_argument(
         "--remote",
         action="store_true",
         help="Invoke deployed Lambda instead of running locally",
@@ -391,14 +417,18 @@ Examples:
     args = parser.parse_args()
 
     # Validate: at least one operation must be specified
-    if not args.unwarp and not args.analyze:
-        parser.error("At least one operation must be specified: --unwarp or --analyze")
+    if not args.unwarp and not args.analyze and not args.rotate:
+        parser.error("At least one operation must be specified: --unwarp, --analyze, or --rotate")
 
     event = {
         "input_s3_uri": args.input_s3_uri,
         "unwarp": args.unwarp,
         "analyze": args.analyze,
     }
+    if args.rotate:
+        event["rotate"] = True
+    if args.rotation_angle is not None:
+        event["rotation_angle"] = args.rotation_angle
     if args.views:
         event["views_to_analyze"] = args.views
     if args.prompt:

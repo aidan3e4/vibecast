@@ -46,30 +46,40 @@ def unwarp_fisheye_image(
     return views
 
 
-def rotate_image(img_rgb, angle: int):
-    """Rotate an image by the given angle (90, 180, or 270 degrees clockwise).
+def rotate_image(img_rgb, angle: float):
+    """Rotate an image by the given angle in degrees clockwise, expanding the canvas to fit.
 
     Args:
         img_rgb: Numpy array (RGB) of the image
-        angle: Rotation angle in degrees. Must be 90, 180, or 270.
+        angle: Rotation angle in degrees clockwise. Any numeric value.
 
     Returns:
-        Rotated numpy array (RGB)
+        Rotated numpy array (RGB) with expanded canvas (black fill in corners)
     """
-    rotation_map = {
-        90: cv2.ROTATE_90_CLOCKWISE,
-        180: cv2.ROTATE_180,
-        270: cv2.ROTATE_90_COUNTERCLOCKWISE,
-    }
-    if angle not in rotation_map:
-        raise ValueError(f"Invalid rotation angle: {angle}. Must be 90, 180, or 270.")
-    return cv2.rotate(img_rgb, rotation_map[angle])
+    h, w = img_rgb.shape[:2]
+    center = (w / 2, h / 2)
+
+    # OpenCV rotates counter-clockwise for positive angles, so negate for clockwise
+    rotation_matrix = cv2.getRotationMatrix2D(center, -angle, 1.0)
+
+    # Compute new bounding dimensions
+    cos_val = abs(rotation_matrix[0, 0])
+    sin_val = abs(rotation_matrix[0, 1])
+    new_w = round(h * sin_val + w * cos_val)
+    new_h = round(h * cos_val + w * sin_val)
+
+    # Adjust the rotation matrix to account for the new center
+    rotation_matrix[0, 2] += (new_w - w) / 2
+    rotation_matrix[1, 2] += (new_h - h) / 2
+
+    return cv2.warpAffine(img_rgb, rotation_matrix, (new_w, new_h))
 
 
 async def process_image_async(
     input_s3_uri: str,
     unwarp: bool = False,
     analyze: bool = False,
+    rotate: bool = False,
     views_to_analyze: list[str] = None,
     prompt: str = None,
     model: str = None,
@@ -77,6 +87,7 @@ async def process_image_async(
     results_bucket: str = None,
     fov: int = None,
     view_angle: int = None,
+    rotation_angle: float = None,
 ) -> dict[str, Any]:
     """Full processing pipeline for fisheye images.
 
@@ -111,8 +122,8 @@ async def process_image_async(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Validate: at least one operation must be specified
-    if not unwarp and not analyze:
-        raise ValueError("At least one operation must be specified: unwarp=True or analyze=True")
+    if not unwarp and not analyze and not rotate:
+        raise ValueError("At least one operation must be specified: unwarp=True, analyze=True, or rotate=True")
 
     # Normalize and validate view names
     if views_to_analyze:
@@ -193,6 +204,19 @@ async def process_image_async(
                 )
                 analysis_results[direction] = result
 
+    # MODE 4: Rotate image
+    rotated_uri = None
+    if rotate:
+        if rotation_angle is None:
+            raise ValueError("rotation_angle is required when rotate=True")
+        input_img = download_image_from_s3(input_bucket, input_key)
+        rotated_img = rotate_image(input_img, rotation_angle)
+
+        # Save to same bucket/path as input, with _rotated suffix
+        name_without_ext, ext = input_key.rsplit(".", 1)
+        rotated_key = f"{name_without_ext}_rotated.{ext}"
+        rotated_uri = upload_image_to_s3(rotated_img, input_bucket, rotated_key)
+
     # Build final results
     processed_at = datetime.utcnow().isoformat() + "Z"
     results = {
@@ -216,6 +240,12 @@ async def process_image_async(
         results["config"]["prompt"] = prompt
         results["config"]["model"] = model
 
+    # Include rotated_image if rotation was performed
+    if rotated_uri is not None:
+        results["rotated_image"] = rotated_uri
+        results["config"]["rotate"] = True
+        results["config"]["rotation_angle"] = rotation_angle
+
     # Upload results JSON
     results_key = f"{output_results_prefix}_results_{timestamp}.json"
     results_uri = upload_json_to_s3(results, results_bucket, results_key)
@@ -228,6 +258,7 @@ def process_image(
     input_s3_uri: str,
     unwarp: bool = False,
     analyze: bool = False,
+    rotate: bool = False,
     views_to_analyze: list[str] = None,
     prompt: str = None,
     model: str = None,
@@ -235,6 +266,7 @@ def process_image(
     results_bucket: str = None,
     fov: int = None,
     view_angle: int = None,
+    rotation_angle: float = None,
 ) -> dict[str, Any]:
     """Sync wrapper for process_image_async."""
     return asyncio.run(
@@ -242,6 +274,7 @@ def process_image(
             input_s3_uri=input_s3_uri,
             unwarp=unwarp,
             analyze=analyze,
+            rotate=rotate,
             views_to_analyze=views_to_analyze,
             prompt=prompt,
             model=model,
@@ -249,5 +282,6 @@ def process_image(
             results_bucket=results_bucket,
             fov=fov,
             view_angle=view_angle,
+            rotation_angle=rotation_angle,
         )
     )
