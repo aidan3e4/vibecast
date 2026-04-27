@@ -49,6 +49,13 @@ MODELS: dict[str, ModelInfo] = {
         description="Legacy GPT-4 Turbo with vision",
         tier="legacy",
     ),
+    "gpt-5-4-mini": ModelInfo(
+        id="gpt-5.4-mini-2026-03-17",
+        name="GPT-5-4-mini",
+        provider=Provider.OPENAI,
+        description="OpenAI's GPT-5.4-mini with vision capabilities",
+        tier="premium",
+    ),
     # Anthropic models
     "claude-sonnet-4-20250514": ModelInfo(
         id="claude-sonnet-4-20250514",

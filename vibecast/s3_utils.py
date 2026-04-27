@@ -1,6 +1,8 @@
 """S3 utilities for reading and writing images and results."""
 
 import json
+import re
+from datetime import datetime, timedelta
 from typing import Any
 
 import boto3
@@ -81,3 +83,74 @@ def parse_s3_uri(uri: str) -> tuple[str, str]:
         raise ValueError(f"Invalid S3 URI: {uri}")
 
     return parts[0], parts[1]
+
+
+_DATETIME_RE = re.compile(r"_(\d{14})\.\w+$")
+
+
+def _parse_filename_datetime(key: str) -> datetime | None:
+    """Extract datetime from a filename ending in _YYYYMMDDHHMMSS.ext."""
+    match = _DATETIME_RE.search(key)
+    if not match:
+        return None
+    try:
+        return datetime.strptime(match.group(1), "%Y%m%d%H%M%S")
+    except ValueError:
+        return None
+
+
+def find_images_in_bucket(
+    bucket_suffix: str,
+    timestamp: datetime,
+    interval_seconds: int,
+    num_images: int,
+    delta_seconds: int = 300,
+) -> list[str] | None:
+    """Find images in a vibecast bucket by stepping back from a timestamp.
+
+    Looks in s3://vibecast-{bucket_suffix}/ftp_uploads/YYYY/MM/DD/ for files
+    whose embedded datetime (_YYYYMMDDHHMMSS) is closest to each target time,
+    within delta_seconds tolerance.
+
+    Args:
+        bucket_suffix: Appended to "vibecast-" to form the bucket name.
+        timestamp: Starting datetime; first image should be closest to this.
+        interval_seconds: How far back each subsequent slot steps.
+        num_images: Maximum number of images to retrieve.
+        delta_seconds: Maximum allowed difference (in seconds) between target
+                       and actual image datetime.
+
+    Returns:
+        None if the first slot has no match within delta_seconds.
+        Otherwise a list of S3 keys (may be shorter than num_images if a later
+        slot has no match).
+    """
+    bucket = f"vibecast-{bucket_suffix}"
+    results = []
+
+    for i in range(num_images):
+        target = timestamp - timedelta(seconds=i * interval_seconds)
+        prefix = f"ftp_uploads/{target.strftime('%Y/%m/%d')}/"
+
+        # List all objects under that day's prefix
+        paginator = s3_client.get_paginator("list_objects_v2")
+        candidates = []
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                file_dt = _parse_filename_datetime(key)
+                if file_dt is None:
+                    continue
+                diff = abs((file_dt - target).total_seconds())
+                if diff <= delta_seconds:
+                    candidates.append((diff, key))
+
+        if not candidates:
+            if i == 0:
+                return None
+            break
+
+        candidates.sort(key=lambda x: x[0])
+        results.append(candidates[0][1])
+
+    return results
