@@ -1,5 +1,6 @@
 """Insights - higher-level analysis functions built on top of vibecast primitives."""
 
+import asyncio
 import json
 from datetime import datetime
 
@@ -83,6 +84,7 @@ async def get_crowd(
     interval_seconds: int,
     num_images: int,
     model_id: str,
+    view: str = "below",
 ) -> list[dict]:
     """Retrieve images, analyze each for crowd info, and save results to S3.
 
@@ -97,6 +99,7 @@ async def get_crowd(
         interval_seconds: Seconds between each image slot stepping backward.
         num_images: Maximum number of images to retrieve and analyze.
         model_id: Vision LLM model identifier to use for analysis.
+        view: Which unwarped view to analyze: "below", "north", "south", "east", "west".
 
     Returns:
         List of per-image result dicts, each containing:
@@ -110,11 +113,12 @@ async def get_crowd(
     bucket = f"vibecast-{bucket_suffix}"
 
     # Retrieve image keys
-    image_keys = find_images_in_bucket(
+    image_keys = await find_images_in_bucket(
         bucket_suffix=bucket_suffix,
         timestamp=timestamp,
         interval_seconds=interval_seconds,
         num_images=num_images,
+        view=view,
     )
     if image_keys is None:
         image_keys = []
@@ -161,3 +165,24 @@ async def get_crowd(
         image_results.append(result)
 
     return image_results
+
+
+def get_crowd_sync(
+    bucket_suffix: str,
+    timestamp: datetime,
+    interval_seconds: int,
+    num_images: int,
+    model_id: str,
+    view: str = "below",
+) -> list[dict]:
+    """Sync wrapper for get_crowd."""
+    return asyncio.run(
+        get_crowd(
+            bucket_suffix=bucket_suffix,
+            timestamp=timestamp,
+            interval_seconds=interval_seconds,
+            num_images=num_images,
+            model_id=model_id,
+            view=view,
+        )
+    )

@@ -41,7 +41,7 @@ from vibecast import (
     list_prompts,
     push_prompt,
 )
-from vibecast.insights import get_crowd
+from vibecast.insights import get_crowd_sync
 from vibecast.processor import process_image
 
 logger = logging.getLogger()
@@ -242,15 +242,14 @@ def insights_crowd_handler(event: dict[str, Any], context: Any) -> dict[str, Any
 
     Body:
     {
-        "bucket_suffix": "ftp",           # Required
+        "bucket_suffix": "ftp",             # Required
         "timestamp": "2026-04-27T14:30:00", # Required, ISO format
-        "interval_seconds": 60,           # Required
-        "num_images": 5,                  # Required
-        "model_id": "gpt-4o"             # Optional, defaults to config default
+        "interval_seconds": 60,             # Required
+        "num_images": 5,                    # Required
+        "model_id": "gpt-4o",              # Optional, defaults to config default
+        "view": "below"                     # Optional, one of below/north/south/east/west
     }
     """
-    import asyncio
-
     from vibecast.config import Config
 
     try:
@@ -276,15 +275,15 @@ def insights_crowd_handler(event: dict[str, Any], context: Any) -> dict[str, Any
             return {"statusCode": 400, "body": json.dumps({"error": f"Invalid timestamp format: {timestamp_str}"})}
 
         model_id = params.get("model_id") or Config.DEFAULT_MODEL
+        view = params.get("view", "below")
 
-        results = asyncio.run(
-            get_crowd(
-                bucket_suffix=bucket_suffix,
-                timestamp=timestamp,
-                interval_seconds=int(interval_seconds),
-                num_images=int(num_images),
-                model_id=model_id,
-            )
+        results = get_crowd_sync(
+            bucket_suffix=bucket_suffix,
+            timestamp=timestamp,
+            interval_seconds=int(interval_seconds),
+            num_images=int(num_images),
+            model_id=model_id,
+            view=view,
         )
 
         return {"statusCode": 200, "body": json.dumps(results, default=str)}
