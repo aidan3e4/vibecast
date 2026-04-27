@@ -96,7 +96,7 @@ MODELS: dict[str, ModelInfo] = {
     ),
 }
 
-DEFAULT_MODEL = "gpt-4o"
+DEFAULT_MODEL = "gpt-5.4-mini-2026-03-17"
 
 
 def list_models() -> list[dict]:

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import traceback
+from datetime import datetime
 from typing import Any
 
 # IMPORTANT: Load secrets from AWS Secrets Manager and set as environment variables
@@ -40,6 +41,7 @@ from vibecast import (
     list_prompts,
     push_prompt,
 )
+from vibecast.insights import get_crowd
 from vibecast.processor import process_image
 
 logger = logging.getLogger()
@@ -107,6 +109,9 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     if raw_path.startswith("/prompts") or "prompts" in route_key:
         return prompts_handler(event, context)
+
+    if raw_path == "/insights/crowd" or route_key == "POST /insights/crowd":
+        return insights_crowd_handler(event, context)
 
     try:
         # Parse event - handle both direct invocation and API Gateway
@@ -230,6 +235,63 @@ def models_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             }
         ),
     }
+
+
+def insights_crowd_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    """Handle POST /insights/crowd — analyze crowd in images from a bucket.
+
+    Body:
+    {
+        "bucket_suffix": "ftp",           # Required
+        "timestamp": "2026-04-27T14:30:00", # Required, ISO format
+        "interval_seconds": 60,           # Required
+        "num_images": 5,                  # Required
+        "model_id": "gpt-4o"             # Optional, defaults to config default
+    }
+    """
+    import asyncio
+
+    from vibecast.config import Config
+
+    try:
+        if "body" in event and isinstance(event["body"], str):
+            params = json.loads(event["body"])
+        else:
+            params = event
+
+        bucket_suffix = params.get("bucket_suffix")
+        timestamp_str = params.get("timestamp")
+        interval_seconds = params.get("interval_seconds")
+        num_images = params.get("num_images")
+
+        if not all([bucket_suffix, timestamp_str, interval_seconds, num_images]):
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Missing required fields: bucket_suffix, timestamp, interval_seconds, num_images"}),
+            }
+
+        try:
+            timestamp = datetime.fromisoformat(timestamp_str)
+        except ValueError:
+            return {"statusCode": 400, "body": json.dumps({"error": f"Invalid timestamp format: {timestamp_str}"})}
+
+        model_id = params.get("model_id") or Config.DEFAULT_MODEL
+
+        results = asyncio.run(
+            get_crowd(
+                bucket_suffix=bucket_suffix,
+                timestamp=timestamp,
+                interval_seconds=int(interval_seconds),
+                num_images=int(num_images),
+                model_id=model_id,
+            )
+        )
+
+        return {"statusCode": 200, "body": json.dumps(results, default=str)}
+
+    except Exception as e:
+        logger.error(f"Insights crowd error: {str(e)}\n{traceback.format_exc()}")
+        return {"statusCode": 500, "body": json.dumps({"error": f"Internal error: {str(e)}"})}
 
 
 def prompts_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
