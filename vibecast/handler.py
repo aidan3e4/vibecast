@@ -275,7 +275,7 @@ def insights_crowd_handler(event: dict[str, Any], context: Any) -> dict[str, Any
             return {"statusCode": 400, "body": json.dumps({"error": f"Invalid timestamp format: {timestamp_str}"})}
 
         model_id = params.get("model_id") or Config.DEFAULT_MODEL
-        view = params.get("view", "below")
+        views = params.get("views") or ["below"]
 
         results = get_crowd_sync(
             bucket_suffix=bucket_suffix,
@@ -283,7 +283,7 @@ def insights_crowd_handler(event: dict[str, Any], context: Any) -> dict[str, Any
             interval_seconds=int(interval_seconds),
             num_images=int(num_images),
             model_id=model_id,
-            view=view,
+            views=views,
         )
 
         return {"statusCode": 200, "body": json.dumps(results, default=str)}

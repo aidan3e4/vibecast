@@ -54,11 +54,12 @@ def upload_json_to_s3(data: dict[str, Any], bucket: str, key: str) -> str:
     return f"s3://{bucket}/{key}"
 
 
-def append_json_to_s3(entry: dict[str, Any], bucket: str, key: str) -> str:
-    """Append an entry to a JSON list stored at key in S3.
+def append_json_to_s3(entry: dict[str, Any] | list[dict[str, Any]], bucket: str, key: str) -> str:
+    """Append one or more entries to a JSON list stored at key in S3.
 
-    If the file doesn't exist, creates it as a single-element list.
+    If the file doesn't exist, creates it as a list.
     If the file exists and contains a dict (legacy), converts it to a list first.
+    If entry is a list, its items are each appended individually (extend semantics).
     Returns the S3 URI.
     """
     existing: list[dict] = []
@@ -74,7 +75,10 @@ def append_json_to_s3(entry: dict[str, Any], bucket: str, key: str) -> str:
     except Exception:
         pass
 
-    existing.append(entry)
+    if isinstance(entry, list):
+        existing.extend(entry)
+    else:
+        existing.append(entry)
     json_bytes = json.dumps(existing, indent=2, default=str).encode("utf-8")
     s3_client.put_object(Bucket=bucket, Key=key, Body=json_bytes, ContentType="application/json")
     return f"s3://{bucket}/{key}"

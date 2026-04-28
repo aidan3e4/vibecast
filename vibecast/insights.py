@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from vibecast.llm import analyze_image
 from vibecast.prompts import get_prompt
@@ -36,7 +36,8 @@ def _load_insights_cache(bucket: str, date: datetime) -> dict[str, dict]:
                     data = json.loads(response["Body"].read().decode("utf-8"))
                     entries = data if isinstance(data, list) else [data]
                     for idx, entry in enumerate(entries):
-                        cache[f"{key}#{idx}"] = entry
+                        if isinstance(entry, dict):
+                            cache[f"{key}#{idx}"] = entry
                 except Exception:
                     pass
     except Exception:
@@ -80,93 +81,145 @@ def _find_cache_hit(
     return None, None
 
 
+async def _analyze_view(
+    bucket: str,
+    key: str,
+    image_dt: datetime,
+    view: str,
+    model_id: str,
+    prompt: str,
+    cache: dict[str, dict],
+    claimed: set[str],
+) -> dict:
+    """Analyze a single view image, using cache if available."""
+    cache_key, cached_result = _find_cache_hit(image_dt, model_id, prompt, cache, claimed)
+    if cached_result is not None and cached_result.get("view") == view:
+        claimed.add(cache_key)
+        return cached_result
+
+    img = download_image_from_s3(bucket, key)
+    img_b64 = image_to_base64(img)
+    analysis = await analyze_image(img_b64, prompt, model=model_id)
+
+    return {
+        "bucket": bucket,
+        "key": key,
+        "view": view,
+        "image_datetime": image_dt.isoformat(),
+        "model": model_id,
+        "prompt": prompt,
+        "analysis": analysis,
+    }
+
+
 async def get_crowd(
     bucket_suffix: str,
     timestamp: datetime,
     interval_seconds: int,
     num_images: int,
     model_id: str,
-    view: str = "below",
-) -> list[dict]:
-    """Retrieve images, analyze each for crowd info, and save results to S3.
+    views: list[str] = None,
+) -> dict[str, dict]:
+    """Retrieve images for multiple views, analyze each for crowd info, and save results to S3.
 
-    Fetches up to num_images images stepping back from timestamp by
-    interval_seconds, analyzes each with the latest Crowd prompt, and saves
-    the results JSON to:
-        s3://vibecast-{bucket_suffix}/insights/YYYY/MM/DD/crowd_{datetime}.json
+    For each timestamp slot, fetches images for all requested views, analyzes them
+    in parallel, and saves a single JSON file per slot containing all view results.
 
     Args:
         bucket_suffix: Appended to "vibecast-" to form the bucket name.
         timestamp: Starting datetime for image retrieval.
         interval_seconds: Seconds between each image slot stepping backward.
-        num_images: Maximum number of images to retrieve and analyze.
+        num_images: Maximum number of slots to retrieve and analyze.
         model_id: Vision LLM model identifier to use for analysis.
-        view: Which unwarped view to analyze: "below", "north", "south", "east", "west".
+        views: List of views to analyze: "below", "north", "south", "east", "west".
+               Defaults to ["below"].
 
     Returns:
-        List of per-image result dicts, each containing:
-        - bucket: the full bucket name
-        - key: S3 key of the source image
-        - image_datetime: ISO timestamp parsed from the filename
-        - model: model_id used
-        - analysis: LLM response (parsed JSON or raw string)
-        - results_uri: S3 URI where that image's JSON was saved
+        Dict mapping image_datetime (ISO string) -> {
+            "summary": None,
+            "results": list of per-view result dicts, each containing:
+                - bucket, key, view, image_datetime, model, analysis, results_uri
+        }
     """
+    if views is None:
+        views = ["below"]
+
     bucket = f"vibecast-{bucket_suffix}"
-
-    # Retrieve image keys
-    image_keys = await find_images_in_bucket(
-        bucket_suffix=bucket_suffix,
-        timestamp=timestamp,
-        interval_seconds=interval_seconds,
-        num_images=num_images,
-        view=view,
-    )
-    if image_keys is None:
-        image_keys = []
-
-    # Fetch the latest Crowd prompt
     prompt = get_prompt("Crowd")
-
-    # Load existing insights cache for today's date (covers most common case)
     cache = _load_insights_cache(bucket, timestamp)
     claimed: set[str] = set()
 
-    # Analyze each image and save a result per image
-    image_results = []
-    for key in image_keys:
-        file_dt = _parse_filename_datetime(key)
-        image_dt = file_dt if file_dt else timestamp
+    # Fetch image keys for all views in parallel per slot
+    view_keys_list = await asyncio.gather(*[
+        find_images_in_bucket(
+            bucket_suffix=bucket_suffix,
+            timestamp=timestamp,
+            interval_seconds=interval_seconds,
+            num_images=num_images,
+            view=view,
+        )
+        for view in views
+    ])
 
-        # Check cache before calling the LLM
-        cache_key, cached_result = _find_cache_hit(image_dt, model_id, prompt, cache, claimed)
-        if cached_result is not None:
-            claimed.add(cache_key)
-            image_results.append(cached_result)
+    # Build per-slot structure: slot_index -> {view -> key}
+    # Use the first view that has results to determine how many slots there are
+    num_slots = max((len(keys) for keys in view_keys_list if keys), default=0)
+
+    output: dict[str, dict] = {}
+
+    for slot_idx in range(num_slots):
+        # Collect (view, key) pairs available for this slot
+        slot_view_keys = []
+        for view, keys in zip(views, view_keys_list):
+            if keys and slot_idx < len(keys):
+                slot_view_keys.append((view, keys[slot_idx]))
+
+        if not slot_view_keys:
             continue
 
-        img = download_image_from_s3(bucket, key)
-        img_b64 = image_to_base64(img)
-        analysis = await analyze_image(img_b64, prompt, model=model_id)
+        # Determine the slot datetime from the first available key
+        first_key = slot_view_keys[0][1]
+        file_dt = _parse_filename_datetime(first_key)
+        image_dt = file_dt if file_dt else (timestamp - timedelta(seconds=slot_idx * interval_seconds))
 
-        result = {
-            "bucket": bucket,
-            "key": key,
-            "image_datetime": image_dt.isoformat(),
-            "model": model_id,
-            "prompt": prompt,
-            "analysis": analysis,
-        }
+        # Analyze all views for this slot in parallel
+        view_results = await asyncio.gather(*[
+            _analyze_view(bucket, key, image_dt, view, model_id, prompt, cache, claimed)
+            for view, key in slot_view_keys
+        ])
 
+        # Save all view results for this slot into one JSON file
         date_path = image_dt.strftime("%Y/%m/%d")
         dt_str = image_dt.strftime("%Y%m%d_%H%M%S")
         results_key = f"insights/{date_path}/crowd_{dt_str}.json"
-        results_uri = append_json_to_s3(result, bucket, results_key)
-        result["results_uri"] = results_uri
 
-        image_results.append(result)
+        results_with_uri = []
+        for result in view_results:
+            result = dict(result)
+            result["results_uri"] = f"s3://{bucket}/{results_key}"
+            results_with_uri.append(result)
 
-    return image_results
+        append_json_to_s3(results_with_uri, bucket, results_key)
+
+        crowdedness_pairs = [
+            (r["analysis"]["crowdedness_level"], r["analysis"]["crowdedness"])
+            for r in results_with_uri
+            if isinstance(r.get("analysis"), dict)
+            and "crowdedness_level" in r["analysis"]
+            and "crowdedness" in r["analysis"]
+        ]
+        if crowdedness_pairs:
+            level, crowd = max(crowdedness_pairs, key=lambda x: x[0])
+            summary = {"crowd_level": level, "crowd": crowd}
+        else:
+            summary = None
+
+        output[image_dt.isoformat()] = {
+            "summary": summary,
+            "results": results_with_uri,
+        }
+
+    return output
 
 
 def get_crowd_sync(
@@ -175,8 +228,8 @@ def get_crowd_sync(
     interval_seconds: int,
     num_images: int,
     model_id: str,
-    view: str = "below",
-) -> list[dict]:
+    views: list[str] = None,
+) -> dict[str, dict]:
     """Sync wrapper for get_crowd."""
     return asyncio.run(
         get_crowd(
@@ -185,6 +238,6 @@ def get_crowd_sync(
             interval_seconds=interval_seconds,
             num_images=num_images,
             model_id=model_id,
-            view=view,
+            views=views,
         )
     )
