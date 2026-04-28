@@ -54,6 +54,32 @@ def upload_json_to_s3(data: dict[str, Any], bucket: str, key: str) -> str:
     return f"s3://{bucket}/{key}"
 
 
+def append_json_to_s3(entry: dict[str, Any], bucket: str, key: str) -> str:
+    """Append an entry to a JSON list stored at key in S3.
+
+    If the file doesn't exist, creates it as a single-element list.
+    If the file exists and contains a dict (legacy), converts it to a list first.
+    Returns the S3 URI.
+    """
+    existing: list[dict] = []
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        data = json.loads(response["Body"].read().decode("utf-8"))
+        if isinstance(data, list):
+            existing = data
+        else:
+            existing = [data]
+    except s3_client.exceptions.NoSuchKey:
+        pass
+    except Exception:
+        pass
+
+    existing.append(entry)
+    json_bytes = json.dumps(existing, indent=2, default=str).encode("utf-8")
+    s3_client.put_object(Bucket=bucket, Key=key, Body=json_bytes, ContentType="application/json")
+    return f"s3://{bucket}/{key}"
+
+
 def generate_output_prefix(input_key: str, main_dir: str) -> str:
     """Generate an output prefix based on input key and timestamp.
 

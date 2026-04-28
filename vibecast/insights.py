@@ -8,10 +8,10 @@ from vibecast.llm import analyze_image
 from vibecast.prompts import get_prompt
 from vibecast.s3_utils import (
     _parse_filename_datetime,
+    append_json_to_s3,
     download_image_from_s3,
     find_images_in_bucket,
     s3_client,
-    upload_json_to_s3,
 )
 from vibecast.utils import image_to_base64
 
@@ -34,7 +34,9 @@ def _load_insights_cache(bucket: str, date: datetime) -> dict[str, dict]:
                 try:
                     response = s3_client.get_object(Bucket=bucket, Key=key)
                     data = json.loads(response["Body"].read().decode("utf-8"))
-                    cache[key] = data
+                    entries = data if isinstance(data, list) else [data]
+                    for idx, entry in enumerate(entries):
+                        cache[f"{key}#{idx}"] = entry
                 except Exception:
                     pass
     except Exception:
@@ -159,7 +161,7 @@ async def get_crowd(
         date_path = image_dt.strftime("%Y/%m/%d")
         dt_str = image_dt.strftime("%Y%m%d_%H%M%S")
         results_key = f"insights/{date_path}/crowd_{dt_str}.json"
-        results_uri = upload_json_to_s3(result, bucket, results_key)
+        results_uri = append_json_to_s3(result, bucket, results_key)
         result["results_uri"] = results_uri
 
         image_results.append(result)
