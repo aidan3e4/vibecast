@@ -77,11 +77,6 @@ def get_api_key_for_model(model_id: str) -> str:
 
 
 class Config:
-    # S3 Buckets
-    INPUT_BUCKET = os.environ["INPUT_BUCKET"]
-    OUTPUT_BUCKET = os.environ["OUTPUT_BUCKET"]
-    RESULTS_BUCKET = os.environ["RESULTS_BUCKET"]
-
     # Processing defaults
     DEFAULT_FOV = int(os.environ.get("DEFAULT_FOV", "90"))
     DEFAULT_VIEW_ANGLE = int(os.environ.get("DEFAULT_VIEW_ANGLE", "45"))

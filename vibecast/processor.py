@@ -114,8 +114,10 @@ async def process_image_async(
         - results_uri: S3 URI of the full results JSON
         - processed_at: ISO timestamp
     """
-    output_bucket = output_bucket or Config.OUTPUT_BUCKET
-    results_bucket = results_bucket or Config.RESULTS_BUCKET
+    if not output_bucket:
+        raise ValueError("output_bucket is required")
+    if not results_bucket:
+        raise ValueError("results_bucket is required")
     prompt = prompt or Config.DEFAULT_PROMPT
     model = model or Config.DEFAULT_MODEL
 

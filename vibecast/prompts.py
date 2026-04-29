@@ -11,7 +11,6 @@ For local development or when S3 is not configured, falls back to
 local filesystem in the prompts/ directory.
 """
 
-import os
 import re
 from pathlib import Path
 
@@ -28,19 +27,19 @@ def _get_s3_client():
     return boto3.client("s3")
 
 
-def _get_prompts_bucket() -> str | None:
+def _get_prompts_bucket(bucket: str | None = None) -> str | None:
     """Get the S3 bucket for prompts storage."""
-    return os.environ.get("PROMPTS_BUCKET") or os.environ.get("RESULTS_BUCKET")
+    return bucket
 
 
-def _list_s3_prompts() -> dict[str, list[int]]:
+def _list_s3_prompts(bucket: str | None = None) -> dict[str, list[int]]:
     """List all prompts from S3.
 
     Returns:
         Dict mapping prompt name to list of versions
     """
-    bucket = _get_prompts_bucket()
-    if not bucket:
+    resolved_bucket = _get_prompts_bucket(bucket)
+    if not resolved_bucket:
         return {}
 
     prompts = {}
@@ -48,7 +47,7 @@ def _list_s3_prompts() -> dict[str, list[int]]:
         s3 = _get_s3_client()
         paginator = s3.get_paginator("list_objects_v2")
 
-        for page in paginator.paginate(Bucket=bucket, Prefix=S3_PROMPTS_PREFIX):
+        for page in paginator.paginate(Bucket=resolved_bucket, Prefix=S3_PROMPTS_PREFIX):
             for obj in page.get("Contents", []):
                 key = obj["Key"]
                 filename = key.split("/")[-1]
@@ -100,14 +99,14 @@ def _merge_prompts(s3_prompts: dict, local_prompts: dict) -> dict[str, list[int]
     return merged
 
 
-def list_prompts() -> list[dict]:
+def list_prompts(bucket: str | None = None) -> list[dict]:
     """List all available prompts with their names and versions.
 
     Returns:
         List of dicts with keys: name, version, latest (bool), source (s3|local)
     """
-    s3_prompts = _list_s3_prompts()
-    local_prompts = _list_local_prompts()
+    s3_prompts = _list_s3_prompts(bucket)
+    local_prompts = _list_local_prompts() if not bucket else {}
 
     result = []
 
@@ -125,7 +124,7 @@ def list_prompts() -> list[dict]:
                 }
             )
 
-    # Add local prompts that aren't in S3
+    # Add local prompts that aren't in S3 (only when no bucket specified)
     for name, versions in sorted(local_prompts.items()):
         if name in s3_prompts:
             continue  # Skip, already added from S3
@@ -144,14 +143,14 @@ def list_prompts() -> list[dict]:
     return result
 
 
-def get_prompt_names() -> list[dict]:
+def get_prompt_names(bucket: str | None = None) -> list[dict]:
     """Get all prompt names with their latest version.
 
     Returns:
         List of dicts with keys: name, latest_version, version_count
     """
-    s3_prompts = _list_s3_prompts()
-    local_prompts = _list_local_prompts()
+    s3_prompts = _list_s3_prompts(bucket)
+    local_prompts = _list_local_prompts() if not bucket else {}
     merged = _merge_prompts(s3_prompts, local_prompts)
 
     result = []
@@ -167,14 +166,16 @@ def get_prompt_names() -> list[dict]:
     return result
 
 
-def get_prompt(name: str, version: int = None) -> str:
+def get_prompt(name: str, version: int = None, bucket: str | None = None) -> str:
     """Get a prompt by name and optional version.
 
-    Checks S3 first, then falls back to local filesystem.
+    When bucket is given, only looks in that S3 bucket.
+    When no bucket is given, checks S3 (via env vars) then falls back to local filesystem.
 
     Args:
-        name: Prompt name (e.g., "default", "dan")
+        name: Prompt name (e.g., "default", "Crowd")
         version: Specific version number. If None, returns latest version.
+        bucket: S3 bucket to use. If provided, local filesystem is not used.
 
     Returns:
         Prompt content as string
@@ -182,8 +183,8 @@ def get_prompt(name: str, version: int = None) -> str:
     Raises:
         FileNotFoundError: If prompt doesn't exist
     """
-    s3_prompts = _list_s3_prompts()
-    local_prompts = _list_local_prompts()
+    s3_prompts = _list_s3_prompts(bucket)
+    local_prompts = _list_local_prompts() if not bucket else {}
     merged = _merge_prompts(s3_prompts, local_prompts)
 
     if name not in merged:
@@ -195,15 +196,15 @@ def get_prompt(name: str, version: int = None) -> str:
     if version not in merged[name]:
         raise FileNotFoundError(f"Prompt not found: {name} v{version}")
 
-    # Try S3 first
+    # Try S3
     if name in s3_prompts and version in s3_prompts[name]:
-        bucket = _get_prompts_bucket()
+        resolved_bucket = _get_prompts_bucket(bucket)
         s3 = _get_s3_client()
         key = f"{S3_PROMPTS_PREFIX}prompt_{name}_{version}.txt"
-        response = s3.get_object(Bucket=bucket, Key=key)
+        response = s3.get_object(Bucket=resolved_bucket, Key=key)
         return response["Body"].read().decode("utf-8")
 
-    # Fall back to local
+    # Fall back to local (only reached when bucket is None)
     file_path = LOCAL_PROMPTS_DIR / f"prompt_{name}_{version}.txt"
     if file_path.exists():
         return file_path.read_text()
@@ -211,7 +212,7 @@ def get_prompt(name: str, version: int = None) -> str:
     raise FileNotFoundError(f"Prompt not found: {name} v{version}")
 
 
-def create_prompt_line(name: str, content: str) -> dict:
+def create_prompt_line(name: str, content: str, bucket: str | None = None) -> dict:
     """Create a new prompt line (new name at version 0).
 
     Stores the prompt in S3.
@@ -234,28 +235,28 @@ def create_prompt_line(name: str, content: str) -> dict:
         )
 
     # Check if name already exists (in S3 or local)
-    s3_prompts = _list_s3_prompts()
+    s3_prompts = _list_s3_prompts(bucket)
     local_prompts = _list_local_prompts()
 
     if name in s3_prompts or name in local_prompts:
         raise ValueError(f"Prompt name '{name}' already exists. Use push_prompt to add a new version.")
 
-    bucket = _get_prompts_bucket()
-    if not bucket:
-        raise ValueError("No prompts bucket configured. Set PROMPTS_BUCKET or RESULTS_BUCKET environment variable.")
+    resolved_bucket = _get_prompts_bucket(bucket)
+    if not resolved_bucket:
+        raise ValueError("No prompts bucket specified. Pass bucket_suffix in the request.")
 
     key = f"{S3_PROMPTS_PREFIX}prompt_{name}_0.txt"
     s3 = _get_s3_client()
-    s3.put_object(Bucket=bucket, Key=key, Body=content.encode("utf-8"))
+    s3.put_object(Bucket=resolved_bucket, Key=key, Body=content.encode("utf-8"))
 
     return {
         "name": name,
         "version": 0,
-        "s3_uri": f"s3://{bucket}/{key}",
+        "s3_uri": f"s3://{resolved_bucket}/{key}",
     }
 
 
-def push_prompt(name: str, content: str) -> dict:
+def push_prompt(name: str, content: str, bucket: str | None = None) -> dict:
     """Push a new version of an existing prompt.
 
     Automatically increments the version number. Stores in S3.
@@ -270,7 +271,7 @@ def push_prompt(name: str, content: str) -> dict:
     Raises:
         ValueError: If prompt name doesn't exist
     """
-    s3_prompts = _list_s3_prompts()
+    s3_prompts = _list_s3_prompts(bucket)
     local_prompts = _list_local_prompts()
     merged = _merge_prompts(s3_prompts, local_prompts)
 
@@ -280,19 +281,19 @@ def push_prompt(name: str, content: str) -> dict:
     previous_version = max(merged[name])
     new_version = previous_version + 1
 
-    bucket = _get_prompts_bucket()
-    if not bucket:
-        raise ValueError("No prompts bucket configured. Set PROMPTS_BUCKET or RESULTS_BUCKET environment variable.")
+    resolved_bucket = _get_prompts_bucket(bucket)
+    if not resolved_bucket:
+        raise ValueError("No prompts bucket specified. Pass bucket_suffix in the request.")
 
     key = f"{S3_PROMPTS_PREFIX}prompt_{name}_{new_version}.txt"
     s3 = _get_s3_client()
-    s3.put_object(Bucket=bucket, Key=key, Body=content.encode("utf-8"))
+    s3.put_object(Bucket=resolved_bucket, Key=key, Body=content.encode("utf-8"))
 
     return {
         "name": name,
         "version": new_version,
         "previous_version": previous_version,
-        "s3_uri": f"s3://{bucket}/{key}",
+        "s3_uri": f"s3://{resolved_bucket}/{key}",
     }
 
 

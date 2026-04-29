@@ -61,8 +61,9 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         "views_to_analyze": ["N", "S", "E", "W", "B"],      # Which views to analyze (unwarp mode only)
         "prompt": "Custom analysis prompt...",              # Optional
         "model": "gpt-4o",                                  # Optional, OpenAI model
-        "output_bucket": "custom-output-bucket",            # Optional, override default
-        "results_bucket": "custom-results-bucket",          # Optional, override default
+        "bucket_suffix": "ftp",                             # Optional, sets output+results to vibecast-{suffix}
+        "output_bucket": "custom-output-bucket",            # Optional, override output bucket explicitly
+        "results_bucket": "custom-results-bucket",          # Optional, override results bucket explicitly
         "fov": 90,                                          # Optional, field of view (unwarp mode)
         "view_angle": 45                                    # Optional, elevation angle (unwarp mode)
     }
@@ -144,10 +145,21 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         views_to_analyze = params.get("views_to_analyze")
         prompt = params.get("prompt")
         model = params.get("model")
-        output_bucket = params.get("output_bucket")
-        results_bucket = params.get("results_bucket")
         fov = params.get("fov")
         view_angle = params.get("view_angle")
+
+        # Derive bucket_suffix from input_s3_uri if not explicitly provided
+        # e.g. s3://vibecast-diff/... -> "diff"
+        bucket_suffix = params.get("bucket_suffix")
+        if not bucket_suffix and input_s3_uri.startswith("s3://vibecast-"):
+            bucket_suffix = input_s3_uri[len("s3://vibecast-"):].split("/")[0]
+
+        if bucket_suffix:
+            output_bucket = params.get("output_bucket") or f"vibecast-{bucket_suffix}"
+            results_bucket = params.get("results_bucket") or f"vibecast-{bucket_suffix}"
+        else:
+            output_bucket = params.get("output_bucket")
+            results_bucket = params.get("results_bucket")
 
         # Process the image
         result = process_image(
@@ -247,7 +259,7 @@ def insights_crowd_handler(event: dict[str, Any], context: Any) -> dict[str, Any
         "interval_seconds": 60,             # Required
         "num_images": 5,                    # Required
         "model_id": "gpt-4o",              # Optional, defaults to config default
-        "view": "below"                     # Optional, one of below/north/south/east/west
+        "views": ["below", "north"]         # Optional, list of views to analyze (default: ["below"])
     }
     """
     from vibecast.config import Config
@@ -329,25 +341,29 @@ def prompts_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     path_parts = [p for p in raw_path.split("/") if p and p != "prompts"]
     query_params = event.get("queryStringParameters") or {}
 
+    # Resolve bucket from bucket_suffix query param
+    bucket_suffix = query_params.get("bucket_suffix")
+    bucket = f"vibecast-{bucket_suffix}" if bucket_suffix else None
+
     try:
         if http_method == "GET":
             if len(path_parts) == 0:
                 # GET /prompts - list all prompt names (or all versions if ?all=true)
                 if query_params.get("all") == "true":
-                    return {"statusCode": 200, "body": json.dumps({"prompts": list_prompts()})}
-                return {"statusCode": 200, "body": json.dumps({"prompts": get_prompt_names()})}
+                    return {"statusCode": 200, "body": json.dumps({"prompts": list_prompts(bucket)})}
+                return {"statusCode": 200, "body": json.dumps({"prompts": get_prompt_names(bucket)})}
 
             elif len(path_parts) == 1:
                 # GET /prompts/{name} - get latest version
                 name = path_parts[0]
-                content = get_prompt(name)
+                content = get_prompt(name, bucket=bucket)
                 return {"statusCode": 200, "body": json.dumps({"name": name, "content": content})}
 
             elif len(path_parts) == 2:
                 # GET /prompts/{name}/{version}
                 name = path_parts[0]
                 version = int(path_parts[1])
-                content = get_prompt(name, version)
+                content = get_prompt(name, version, bucket=bucket)
                 return {"statusCode": 200, "body": json.dumps({"name": name, "version": version, "content": content})}
 
         elif http_method == "POST":
@@ -359,18 +375,22 @@ def prompts_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
             name = body.get("name")
             content = body.get("content")
+            # bucket_suffix can also come from POST body
+            post_bucket_suffix = body.get("bucket_suffix")
+            if post_bucket_suffix:
+                bucket = f"vibecast-{post_bucket_suffix}"
 
             if not name or not content:
                 return {"statusCode": 400, "body": json.dumps({"error": "Missing required fields: name, content"})}
 
             # Try to push (if name exists) or create (if name doesn't exist)
             try:
-                result = push_prompt(name, content)
+                result = push_prompt(name, content, bucket)
                 return {"statusCode": 200, "body": json.dumps({"action": "pushed", **result})}
             except ValueError as e:
                 if "doesn't exist" in str(e):
                     # Name doesn't exist, create new line
-                    result = create_prompt_line(name, content)
+                    result = create_prompt_line(name, content, bucket)
                     return {"statusCode": 201, "body": json.dumps({"action": "created", **result})}
                 raise
 

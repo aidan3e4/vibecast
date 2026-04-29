@@ -3,21 +3,6 @@ Transform: AWS::Serverless-2016-10-31
 Description: Vibecast fisheye image processing Lambda
 
 Parameters:
-  InputBucket:
-    Type: String
-    Default: vibecast-ftp
-    Description: S3 bucket for input fisheye images
-
-  OutputBucket:
-    Type: String
-    Default: vibecast-ftp
-    Description: S3 bucket for unwarped images
-
-  ResultsBucket:
-    Type: String
-    Default: vibecast-ftp
-    Description: S3 bucket for analysis results
-
   # Option A: Pass API key directly (simpler, less secure)
   OpenAIApiKey:
     Type: String
@@ -62,22 +47,24 @@ Resources:
       Description: Process fisheye images - unwarp and analyze with LLM
       Environment:
         Variables:
-          INPUT_BUCKET: !Ref InputBucket
-          OUTPUT_BUCKET: !Ref OutputBucket
-          RESULTS_BUCKET: !Ref ResultsBucket
           OPENAI_API_KEY: !Ref OpenAIApiKey
           OPENAI_SECRET_NAME: !Ref OpenAISecretName
           NOVITA_SECRET_NAME: !Ref NovitaSecretName
       Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref InputBucket
-        - S3CrudPolicy:
-            BucketName: !Ref OutputBucket
-        - S3CrudPolicy:
-            BucketName: !Ref ResultsBucket
-        # Allow reading from Secrets Manager (if using Option B)
         - Version: '2012-10-17'
           Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:DeleteObject
+                - s3:ListBucket
+                - s3:GetBucketLocation
+                - s3:GetObjectVersion
+                - s3:GetLifecycleConfiguration
+              Resource:
+                - arn:aws:s3:::vibecast-*
+                - arn:aws:s3:::vibecast-*/*
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue

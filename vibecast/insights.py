@@ -145,7 +145,7 @@ async def get_crowd(
         views = ["below"]
 
     bucket = f"vibecast-{bucket_suffix}"
-    prompt = get_prompt("Crowd")
+    prompt = get_prompt("Crowd", bucket=bucket)
     cache = _load_insights_cache(bucket, timestamp)
     claimed: set[str] = set()
 
